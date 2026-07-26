@@ -2,8 +2,8 @@
 
 pre-push:
   jobs:
-    - name: mise run check
-      run: mise run check
+    - name: mise run check-full
+      run: mise run check-full
 
 pre-commit:
   jobs:

@@ -46,6 +46,31 @@ url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_
 url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924919"
 provenance = "github-attestations"
 
+[[tools.android-sdk]]
+version = "22.0"
+backend = "vfox:android-sdk"
+
+[tools.android-sdk."platforms.linux-arm64"]
+url = "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+
+[tools.android-sdk."platforms.linux-arm64-musl"]
+url = "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+
+[tools.android-sdk."platforms.linux-x64"]
+url = "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+
+[tools.android-sdk."platforms.linux-x64-musl"]
+url = "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+
+[tools.android-sdk."platforms.macos-arm64"]
+url = "https://dl.google.com/android/repository/commandlinetools-mac_arm64-15859902_latest.zip"
+
+[tools.android-sdk."platforms.macos-x64"]
+url = "https://dl.google.com/android/repository/commandlinetools-mac_x86_64-15859902_latest.zip"
+
+[tools.android-sdk."platforms.windows-x64"]
+url = "https://dl.google.com/android/repository/commandlinetools-win-15859902_latest.zip"
+
 [[tools.betterleaks]]
 version = "v1.6.1"
 backend = "aqua:betterleaks/betterleaks"
@@ -95,6 +120,38 @@ provenance = "cosign"
 [[tools.cspell]]
 version = "10.0.1"
 backend = "npm:cspell"
+
+[[tools.java]]
+version = "temurin-21.0.11+10.0.LTS"
+backend = "core:java"
+
+[tools.java."platforms.linux-arm64"]
+checksum = "sha256:8d498ec88e1c1989fab95c6784240ab92d011e29c54d20a3f9c324b13476f9ad"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_linux_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.linux-arm64-musl"]
+checksum = "sha256:c8d63598d1dc0a656033515ed258bd6db37506a05407d9f65cd23b95c21027b5"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_alpine-linux_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.linux-x64"]
+checksum = "sha256:4b2220e232a97997b436ca6ab15cbf70171ecff52958a46159dfa5a8c44ca4de"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_linux_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.linux-x64-musl"]
+checksum = "sha256:38bfdcef1e4b45de2ec222047ac79c76bea75d4d7406a310e26cfa236763f05f"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_alpine-linux_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.macos-arm64"]
+checksum = "sha256:6ebcf221c9b41507b14c098e93c6ead6440b8d9bd154f8ec666c4c73abbdb201"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.macos-x64"]
+checksum = "sha256:34180eb03e6d207c388cce3da668f6cc7cd7508c185c24782fadac2c9c0e66f9"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_mac_hotspot_21.0.11_10.tar.gz"
+
+[tools.java."platforms.windows-x64"]
+checksum = "sha256:d3625e7cadf23787ea540229544b6e2ab494b3b54da1801879e583e1dfee0a64"
+url = "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.11%2B10/OpenJDK21U-jdk_x64_windows_hotspot_21.0.11_10.zip"
 
 [[tools.lefthook]]
 version = "2.1.10"
