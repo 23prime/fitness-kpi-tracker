@@ -12,7 +12,9 @@ on:
       - "gradle.properties"
       - "gradlew"
       - "gradlew.bat"
+      - "mise.toml"
       - "mise.lock"
+      - ".editorconfig"
       - ".github/workflows/check-android.yml"
   pull_request:
     paths:
@@ -23,7 +25,9 @@ on:
       - "gradle.properties"
       - "gradlew"
       - "gradlew.bat"
+      - "mise.toml"
       - "mise.lock"
+      - ".editorconfig"
       - ".github/workflows/check-android.yml"
 
 concurrency:
