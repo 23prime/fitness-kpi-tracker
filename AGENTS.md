@@ -14,3 +14,17 @@ This file provides guidance to AI coding agents when working with code in this r
 ## Project Overview
 
 自分専用の活動量・体重トラッキング用 Android アプリ。詳細は [README.md](README.md) および [docs/requirements.md](docs/requirements.md) を参照。
+
+## Directory Structure
+
+- `app/src/main/kotlin/com/okkey/fitnesskpitracker/`: Application source, split into `ui` (Compose + ViewModel), `domain` (pure Kotlin business logic), and `data` (Room DAOs and the Health Connect repository). Only `ui` exists so far; `domain`/`data` are created as features land (see `docs/adr/0001-tech-stack-and-architecture.md`).
+- `app/src/test/kotlin/`: Unit tests (JUnit + kotlin.test + Robolectric).
+- `docs/adr/`: Architecture Decision Records.
+
+## Build, Test, and Lint
+
+Run these via `mise run <task>` (or `./gradlew <task>` directly once `mise run setup` has provisioned the JDK and Android SDK):
+
+- `mise run android-fix` — auto-format Kotlin (`ktlintFormat`).
+- `mise run android-check` — ktlint + detekt (used by pre-commit via `mise run check`).
+- `mise run android-check-full` — `assembleDebug`, `test`, and `lintDebug` (used by pre-push/CI via `mise run check-full`).

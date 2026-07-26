@@ -1,0 +1,17 @@
+fitnesskpitracker
+androidx
+detekt
+arturbosch
+ktlint
+jlleitschuh
+robolectric
+buildscript
+sdkmanager
+temurin
+jvmargs
+viewmodel
+sharedpref
+dists
+gradlew
+Jetpack
+cmdline

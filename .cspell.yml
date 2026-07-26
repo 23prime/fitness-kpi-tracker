@@ -22,3 +22,6 @@ ignorePaths:
   - '.git'
   - '.vscode'
   - 'node_modules'
+  - 'gradlew'
+  - 'gradlew.bat'
+  - 'gradle/wrapper'

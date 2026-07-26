@@ -7,12 +7,23 @@ minimum_release_age = "3d"
 
 
 # ================================================================
+# Plugins
+# ================================================================
+[plugins]
+android-sdk = "https://github.com/mise-plugins/vfox-android-sdk#d94bb261a232fdf7b8f46913cacc776ab293f94f"
+
+
+# ================================================================
 # Tools
 # ================================================================
 [tools]
 
 # Node.js
 node = "26"
+
+# Android
+java = "temurin-21"
+android-sdk = "22.0"
 
 # Markdown
 markdownlint-cli2 = "0.23.1"
@@ -39,18 +50,28 @@ cspell = "10"
 [tasks.setup]
 description = "Setup tools"
 env = { GITHUB_TOKEN = "{{ exec(command='gh auth token') }}" }
-run = ["mise trust -yq", "mise install", "lefthook install"]
+run = ["mise trust -yq", "mise install", "lefthook install", { task = "android-sdk-licenses" }]
 alias = "s"
+
+# Android SDK
+[tasks.android-sdk-licenses]
+description = "Accept Android SDK licenses"
+run = "yes | sdkmanager --licenses"
 
 [tasks.fix]
 description = "Fix all issues"
-depends = ["md-fix", "gh-fix"]
+depends = ["md-fix", "gh-fix", "android-fix"]
 alias = "f"
 
 [tasks.check]
-description = "Check for all issues"
-depends = ["md-check", "gh-check", "spell-check", "secret-check-all"]
+description = "Check for all issues (lightweight; used by pre-commit)"
+depends = ["md-check", "gh-check", "spell-check", "secret-check-all", "android-check"]
 alias = "c"
+
+[tasks.check-full]
+description = "Check for all issues, including full Android build/test/lint (used by pre-push/CI)"
+run = [{ task = "check" }, { task = "android-check-full" }]
+alias = "cf"
 
 [tasks.fix-and-check]
 run = [{ task = "fix" }, { task = "check" }]
@@ -98,6 +119,22 @@ alias = "scc"
 description = "Check for leaked secrets"
 run = "betterleaks git --redact --no-banner"
 alias = "sca"
+
+# Android
+[tasks.android-fix]
+description = "Fix Kotlin formatting issues"
+run = "./gradlew ktlintFormat"
+alias = "af"
+
+[tasks.android-check]
+description = "Check Kotlin formatting and static analysis (ktlint, detekt)"
+run = "./gradlew ktlintCheck detekt"
+alias = "ac"
+
+[tasks.android-check-full]
+description = "Build, test, and lint the Android app"
+run = "./gradlew assembleDebug test lintDebug"
+alias = "acf"
 
 # mise lock
 [tasks.lock-fix]
