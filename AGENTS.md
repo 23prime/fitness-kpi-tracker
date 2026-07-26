@@ -13,4 +13,4 @@ This file provides guidance to AI coding agents when working with code in this r
 
 ## Project Overview
 
-<!-- Something -->
+自分専用の活動量・体重トラッキング用 Android アプリ。詳細は [README.md](README.md) および [docs/requirements.md](docs/requirements.md) を参照。
