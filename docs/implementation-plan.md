@@ -249,7 +249,7 @@ Health Connect から歩数・サイクリング距離・体重を取得し、�
 
 受け入れ基準。
 
-- [ ] Manifest に 4 つの読み取り権限と権限根拠画面の `intent-filter` を追加する。
+- [ ] Manifest に 4 つの読み取り権限と権限根拠画面の `intent-filter` を追加する（レガシーの `ACTION_SHOW_PERMISSIONS_RATIONALE` と、Android 14+ の `ACTION_VIEW_PERMISSION_USAGE`／`HEALTH_PERMISSIONS` カテゴリの両方）。
 - [ ] 未許可時に権限リクエストへ誘導し、拒否されても画面が壊れない。
 - [ ] Health Connect が利用できない場合も手入力のみで動作する。
 - [ ] 歩数・サイクリング距離・体重を直近 30 日分取得し、`*_health_connect` カラムに保存する。
