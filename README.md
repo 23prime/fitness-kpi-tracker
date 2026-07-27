@@ -4,6 +4,10 @@
 
 歩数・サイクリング距離・体重は Health Connect から取得し、ワークアウトのセット数は手入力する。詳細な要件は [docs/requirements.md](docs/requirements.md) を参照。
 
+## 実機での実行
+
+debug ビルドを実機にインストールする手順は [docs/running-on-device.md](docs/running-on-device.md) を参照。
+
 ## Contributing
 
 開発への貢献方法は [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) を参照。

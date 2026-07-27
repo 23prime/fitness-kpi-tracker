@@ -15,3 +15,5 @@ dists
 gradlew
 Jetpack
 cmdline
+screencap
+sdcard
