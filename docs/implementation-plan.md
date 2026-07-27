@@ -82,7 +82,7 @@ score = 歩数 × STEPS_COEFFICIENT
       + セット数 × WORKOUT_SET_COEFFICIENT
 ```
 
-達成度は `score / DAILY_SCORE_TARGET` とする。
+達成度は `score / DAILY_SCORE_TARGET` とする。歩数・サイクリング距離・セット数の各値が `null`（未記録）の場合は 0 として計算する。
 
 体重進捗は目標設定時点の体重を基準に算出する。
 
