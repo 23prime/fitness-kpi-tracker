@@ -1,7 +1,7 @@
 # 実装計画
 
 [要件定義書](requirements.md)と [ADR 0001](adr/0001-tech-stack-and-architecture.md)をもとに、MVP を実装するための設計と作業分割をまとめる。
-本書は GitHub Issue を起票する前の全体像であり、各 Issue の詳細は起票時に本書の該当節を展開する。
+本書は MVP 全体の索引である。個々の作業は #7 〜 #12 の GitHub Issue に展開済みで、各 Issue には本書の該当節を詳細化した内容が入っている。
 
 ## 前提
 
@@ -138,19 +138,19 @@ progress = (WEIGHT_BASELINE_KG - current) / (WEIGHT_BASELINE_KG - WEIGHT_TARGET_
 手入力だけで完結する状態を先に作り、その後に Health Connect を載せる。早い段階で実機にインストールして触れる状態になり、UI の手戻りに気づきやすいためである。
 
 ```text
-Issue 1（永続化基盤）
-  └→ Issue 2（計算ロジック）
-       └→ Issue 3（入力・補正画面）
-            └→ Issue 4（ダッシュボード画面）
-                 └→ Issue 5（Health Connect 連携）
-                      └→ Issue 6（Auto Backup）
+#7（永続化基盤）
+  └→ #8（計算ロジック）
+       └→ #9（入力・補正画面）
+            └→ #10（ダッシュボード画面）
+                 └→ #11（Health Connect 連携）
+                      └→ #12（Auto Backup）
 ```
 
 この並びは推奨順であり、厳密な依存関係は次のとおり。
 
-- Issue 2 は Issue 1 に依存しない。純粋な計算のみのため単独で進められる。
-- Issue 3 は Issue 1 と Issue 2 の両方に依存する。
-- Issue 6 は Issue 1 のみに依存する。Issue 5 の完了を待つ必要はない。
+- #8 は #7 に依存しない。純粋な計算のみのため単独で進められる。
+- #9 は #7 と #8 の両方に依存する。
+- #12 は #7 のみに依存する。#11 の完了を待つ必要はない。
 
 ## Issue 分割
 
@@ -161,7 +161,7 @@ Issue 1（永続化基盤）
 - `mise run check-full` が通る（ktlint / detekt / `assembleDebug` / `test` / Android Lint）。
 - CI（`check-android.yml`）が green になる。
 
-### Issue 1: Room による日次メトリクスの永続化基盤
+### #7 Room による日次メトリクスの永続化基盤
 
 日次メトリクスを保存する Room のスキーマと DAO を用意する。
 
@@ -178,7 +178,7 @@ Issue 1（永続化基盤）
 - [ ] Health Connect 由来の更新が手入力値を上書きしないことを DAO のテストで検証する。
 - [ ] 日付範囲を `Flow` で購読できる。
 
-### Issue 2: アクティビティスコアと体重進捗の計算ロジック
+### #8 アクティビティスコアと体重進捗の計算ロジック
 
 Android に依存しない `domain` パッケージを作り、スコアと進捗を算出する。
 
@@ -197,7 +197,7 @@ Android に依存しない `domain` パッケージを作り、スコアと進�
 - [ ] 期限超過かつ未達成の判定ができる。
 - [ ] `domain` が Android の API に依存しない。
 
-### Issue 3: 入力・補正画面
+### #9 入力・補正画面
 
 手入力だけでデータを蓄積できる状態にする。手動 DI の土台もここで用意する。
 
@@ -216,7 +216,7 @@ Android に依存しない `domain` パッケージを作り、スコアと進�
 - [ ] `EntryViewModel` の状態遷移にテストがある。
 - [ ] 実機で入力・保存できることを確認する。
 
-### Issue 4: ダッシュボード画面
+### #10 ダッシュボード画面
 
 蓄積したデータを KPI として表示する。
 
@@ -236,7 +236,7 @@ Android に依存しない `domain` パッケージを作り、スコアと進�
 - [ ] `DashboardViewModel` の状態遷移にテストがある。
 - [ ] 実機で表示を確認する。
 
-### Issue 5: Health Connect 連携
+### #11 Health Connect 連携
 
 Health Connect から歩数・サイクリング距離・体重を取得し、手入力値を残したまま反映する。
 
@@ -257,7 +257,7 @@ Health Connect から歩数・サイクリング距離・体重を取得し、�
 - [ ] 起動・復帰時と手動更新ボタンで同期が走る。
 - [ ] 実機で Health Connect の実データが反映されることを確認する。
 
-### Issue 6: Auto Backup の対象確認とドキュメント化
+### #12 Auto Backup の対象確認とドキュメント化
 
 Room のデータがバックアップ・復元されることを実機で確認し、要件定義書の記述を実装に合わせる。
 
@@ -281,17 +281,17 @@ Room のデータがバックアップ・復元されることを実機で確認
 
 | 箇所 | 内容 |
 | --- | --- |
-| バックアップ設定ファイル | 要件定義書は `backup_rules.xml` としているが、minSdk 34 では `android:fullBackupContent`（`backup_rules.xml`）は参照されず、`android:dataExtractionRules`（`data_extraction_rules.xml`）のみが有効である。Issue 6 で要件定義書を修正する。 |
+| バックアップ設定ファイル | 要件定義書は `backup_rules.xml` としているが、minSdk 34 では `android:fullBackupContent`（`backup_rules.xml`）は参照されず、`android:dataExtractionRules`（`data_extraction_rules.xml`）のみが有効である。#12 で要件定義書を修正する。 |
 | 目標設定時点の体重と設定日 | 進捗計算に必須だが要件定義書に明示がない。コード内定数として追加する。 |
 | 「現在の体重」の定義 | 未定義のため、記録がある最新の日の値と定める。 |
 | 進捗が 0% 未満・100% 超の場合 | 未定義のため、数値はそのまま表示し、進捗バーの描画時のみ範囲に収めると定める。 |
 
 ## 実装時に検証が必要な事項
 
-- サイクリング距離の取得方法。`ExerciseSessionRecord`（`BIKING`）とその時間範囲の `DistanceRecord` を確実に関連付けられるか（Issue 5）。
-- minSdk 34 でも `HealthConnectClient.sdkStatus` が `SDK_UNAVAILABLE` を返す場合の挙動（Issue 5）。
-- Robolectric で Health Connect のクライアントをどこまで扱えるか。扱えない前提でインターフェースを分離する（Issue 5）。
-- WAL を含む Auto Backup の復元が実機で成立するか（Issue 6）。
+- サイクリング距離の取得方法。`ExerciseSessionRecord`（`BIKING`）とその時間範囲の `DistanceRecord` を確実に関連付けられるか（#11）。
+- minSdk 34 でも `HealthConnectClient.sdkStatus` が `SDK_UNAVAILABLE` を返す場合の挙動（#11）。
+- Robolectric で Health Connect のクライアントをどこまで扱えるか。扱えない前提でインターフェースを分離する（#11）。
+- WAL を含む Auto Backup の復元が実機で成立するか（#12）。
 
 ## スコープ外
 
