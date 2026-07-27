@@ -16,7 +16,7 @@ done
 attached=$(adb devices | awk '/[[:space:]]device$/ { count++ } END { print count + 0 }')
 
 if [[ "$attached" -eq 0 ]]; then
-  echo "No device found. Turn wireless debugging on, or see docs/running-on-device.md to pair one." >&2
+  echo "No device found. Check that USB or wireless debugging is on and authorized, or see docs/running-on-device.md to connect one." >&2
 elif [[ -z "${ANDROID_SERIAL:-}" ]]; then
   # Wireless debugging registers a device twice, once by IP and once over mDNS,
   # which leaves adb and Gradle without a single target.

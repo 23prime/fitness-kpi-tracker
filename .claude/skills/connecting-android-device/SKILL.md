@@ -29,11 +29,11 @@ It exits 1 with one of three messages, each pointing at a different fix.
 
 | Message | Means |
 | --- | --- |
-| `No device found` | Wireless debugging is off on the phone. |
+| `No device found` | USB or wireless debugging is off, the device is unauthorized, or nothing is connected. |
 | `... ANDROID_SERIAL is unset` | Several devices are attached and adb cannot pick one. Set `ANDROID_SERIAL` in `.env` to one of the names it lists. |
 | `... is not among the attached devices` | `.env` points at a device that is not connected. |
 
-`No device found` almost always means wireless debugging got switched off, not that the pairing was lost — adb rediscovers a paired device over mDNS on its own. **Fixing it needs the user; it cannot be done from the shell.** Ask them to open 設定 → システム → 開発者向けオプション → ワイヤレスデバッグ and switch it on, then re-run. Only if that fails does pairing need redoing, which `docs/running-on-device.md` covers.
+`No device found` can mean USB debugging is off, wireless debugging is off, the device is plugged in but unauthorized, or nothing is connected at all. For the paired Pixel 8a, wireless debugging getting switched off is the most common cause — adb rediscovers a paired device over mDNS on its own. **Fixing it needs the user; it cannot be done from the shell.** Ask them to open 設定 → システム → 開発者向けオプション → ワイヤレスデバッグ and switch it on, or plug in the USB cable and approve the authorization prompt, then re-run. Only if that fails does pairing need redoing, which `docs/running-on-device.md` covers.
 
 Run `android-connect` once, then ask. Do not sit in a retry loop — it already retries for 10 seconds internally.
 
