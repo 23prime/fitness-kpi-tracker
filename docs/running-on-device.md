@@ -1,6 +1,6 @@
 # 実機での実行
 
-debug ビルドを実機にインストールして動作を確認する手順。[ADR 0001](adr/0001-tech-stack-and-architecture.md)の決定どおり、配布は debug ビルドの直接インストールのみで、署名設定と keystore は持たない。
+debug ビルドを実機にインストールして動作を確認する手順。[ADR 0001](adr/0001-tech-stack-and-architecture.md)の決定どおり、配布は debug ビルドの直接インストールのみで、リリース用の signingConfig と keystore は持たない。debug ビルド自体は Android Gradle Plugin が既定の debug keystore で自動的に署名する。
 
 ## 前提
 
