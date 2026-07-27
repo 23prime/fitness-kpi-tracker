@@ -112,7 +112,7 @@ progress = (WEIGHT_BASELINE_KG - current) / (WEIGHT_BASELINE_KG - WEIGHT_TARGET_
 - 契機はアプリの起動・復帰（`ON_RESUME`）と、ダッシュボードの手動更新ボタン。
 - 取得範囲は直近 30 日。Health Connect の既定の読み取り可能範囲に合わせる。
 - 書き込みは `*_health_connect` カラムのみ。`*_manual` には触らない。
-- 取得できなかった日は既存値を保持し、`null` で潰さない。
+- 取得できなかった日は既存値を保持し、`null` で潰さない。「取得できなかった」とは Health Connect の読み取り自体が失敗・未許可だった場合を指し、正常に読み取れて 0 件だった日は 0 として保存する。
 - Health Connect が利用できない端末・未許可の状態でも、手入力のみでアプリが成立するようにする。
 
 ### 画面構成
@@ -292,6 +292,7 @@ Room のデータがバックアップ・復元されることを実機で確認
 - minSdk 34 でも `HealthConnectClient.sdkStatus` が `SDK_UNAVAILABLE` を返す場合の挙動（#11）。
 - Robolectric で Health Connect のクライアントをどこまで扱えるか。扱えない前提でインターフェースを分離する（#11）。
 - WAL を含む Auto Backup の復元が実機で成立するか（#12）。
+- 直近 30 日の集計で使うタイムゾーン境界（端末ローカル日時か UTC か）（#11）。
 
 ## スコープ外
 
