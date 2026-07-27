@@ -7,6 +7,14 @@ minimum_release_age = "3d"
 
 
 # ================================================================
+# Environment
+# ================================================================
+[env]
+# Device-specific settings. See .env.example.
+_.file = { path = ".env", optional = true }
+
+
+# ================================================================
 # Plugins
 # ================================================================
 [plugins]
@@ -135,6 +143,15 @@ alias = "ac"
 description = "Build, test, and lint the Android app"
 run = "./gradlew assembleDebug test lintDebug"
 alias = "acf"
+
+[tasks.android-install]
+description = "Install the debug build on the connected device and launch it"
+run = [
+  { task = "android-connect" },
+  "./gradlew installDebug",
+  "adb shell am start -n com.okkey.fitnesskpitracker/.ui.MainActivity",
+]
+alias = "ai"
 
 # mise lock
 [tasks.lock-fix]
