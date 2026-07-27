@@ -7,6 +7,12 @@ local.properties
 *.apk
 *.aab
 
+# Default output of `mise run android-screenshot`
+/screenshot.png
+
+# Device-specific settings
+.env
+
 # Android Studio
 .idea/
 *.iml

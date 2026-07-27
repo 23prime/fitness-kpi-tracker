@@ -41,55 +41,62 @@ USB とワイヤレスのどちらでもよい。
 
 ペア設定が必要なのは初回のみ。2 回目以降は手順 4 だけでよい。
 
-## 3. 接続を確認する
+## 3. 対象の端末を `.env` に設定する
+
+ワイヤレスデバッグでは、同じ端末が IP 経由と mDNS 経由の 2 エントリとして登録されることがある。この状態では adb も Gradle も対象を 1 つに決められず、`more than one device/emulator` で失敗する。対象を `ANDROID_SERIAL` で明示して解決する。
 
 ```bash
-adb devices
+cp .env.example .env
 ```
 
-`<シリアル> device` と表示されれば接続できている。
+`adb devices` の 1 列目に出る名前を `.env` に書く。IP 側のポートはワイヤレスデバッグを切り替えるたびに変わるため、`adb-<シリアル>-XXXX._adb-tls-connect._tcp` 形式の mDNS 名の方を使う。
 
-## 4. ビルドしてインストールする
+```text
+ANDROID_SERIAL=adb-XXXXXXXXXXXXXX-XXXXXX._adb-tls-connect._tcp
+```
+
+`.env` は mise が自動で読み込み、adb と Gradle の双方が `ANDROID_SERIAL` を解釈する。マシンと端末に固有の値なので `.gitignore` に含めてある。端末が 1 台しか繋がっていない場合は設定しなくてもよい。
+
+## 4. 接続を確認する
+
+```bash
+mise run android-connect
+```
+
+対象の端末が現れるまで最大 10 秒待ち、`adb devices -l` の結果を表示する。失敗した場合は原因ごとに異なるメッセージを出す。
+
+## 5. ビルドしてインストールする
+
+```bash
+mise run android-install
+```
+
+接続確認・ビルド・インストール・起動までを続けて実行する。個別に実行する場合は次のとおり。
 
 ```bash
 ./gradlew installDebug
-```
-
-ビルドとインストールを続けて実行する。分けて実行する場合は次のとおり。
-
-```bash
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-APK の出力先は `app/build/outputs/apk/debug/app-debug.apk`。
-
-## 5. 起動する
-
-ランチャーから「Fitness KPI Tracker」を選ぶか、次のコマンドで起動する。
-
-```bash
 adb shell am start -n com.okkey.fitnesskpitracker/.ui.MainActivity
 ```
 
-アンインストールは `./gradlew uninstallDebug` で行う。
+APK だけ作る場合は `./gradlew assembleDebug` で、出力先は `app/build/outputs/apk/debug/app-debug.apk`。アンインストールは `./gradlew uninstallDebug` で行う。
 
 ## スクリーンショットを撮る
 
-`adb exec-out screencap -p` は端末によって真っ黒な画像を返す。端末上にファイルとして出力してから取り出す。
-
 ```bash
-adb shell screencap -p /sdcard/screenshot.png
-adb pull /sdcard/screenshot.png .
-adb shell rm -f /sdcard/screenshot.png
+mise run android-screenshot [出力先]
 ```
+
+出力先を省略した場合は `screenshot.png` に保存する。
+
+`adb exec-out screencap -p` は端末によって真っ黒な画像を返すため、この task は端末上にファイルとして出力してから取り出している。
 
 ## トラブルシューティング
 
 | 症状 | 対処 |
 | --- | --- |
-| `adb devices` に何も表示されない | USB デバッグ（またはワイヤレスデバッグ）が ON か確認する。ワイヤレスの場合は PC と端末が同じネットワークにいる必要がある。 |
+| `No device found` で終わる | USB デバッグ（またはワイヤレスデバッグ）が ON か確認する。ワイヤレスの場合は PC と端末が同じネットワークにいる必要がある。ペアリング済みの端末は adb が mDNS で自動的に見つけるため、多くの場合はワイヤレスデバッグが OFF になっているだけで、ペアリングのやり直しは不要。 |
 | `unauthorized` と表示される | 端末側の許可ダイアログを承認する。ダイアログが出ない場合は、開発者向けオプションの「USB デバッグの許可を取り消す」を実行してから接続し直す。 |
-| 同じ端末が 2 行表示される | ワイヤレス接続時に IP 経由と mDNS 経由の両方が登録された状態。どちらにインストールするか Gradle が決められないため、`adb disconnect <IP>:<ポート>` で IP 経由の方を切る。 |
+| `more than one device/emulator` | 同じ端末が IP 経由と mDNS 経由の 2 エントリで登録されている。手順 3 のとおり `.env` の `ANDROID_SERIAL` で対象を明示する。 |
+| `ANDROID_SERIAL は設定したのに対象が見つからない` | `mise run` は `.env` の値を呼び出し元の環境変数より優先する。一時的に別の端末を指定したい場合は `ANDROID_SERIAL=... ./mise-tasks/android-connect` のようにスクリプトを直接実行する。 |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | 署名の異なる同名アプリが入っている。`./gradlew uninstallDebug` で削除してから入れ直す。 |
-| スクリーンショットが真っ黒になる | `adb exec-out` を使わず、端末上にファイル出力してから `adb pull` する。 |
+| スクリーンショットが真っ黒になる | 画面が消灯・ロックされている可能性がある。`adb shell dumpsys power \| grep mWakefulness` と `adb shell dumpsys window \| grep isKeyguardShowing` で確認する。どちらも問題なければ `adb exec-out` を使っていないか確認する。 |

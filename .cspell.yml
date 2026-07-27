@@ -18,6 +18,12 @@ dictionaries:
   - base-dict
   - project-dict
 
+overrides:
+  # mise file tasks have no file extension, so cspell cannot infer the language
+  # and skips the shell dictionary without this.
+  - filename: 'mise-tasks/**'
+    languageId: shellscript
+
 ignorePaths:
   - '.git'
   - '.vscode'

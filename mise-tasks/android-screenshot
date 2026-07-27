@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Capture a screenshot from the connected device"
+#MISE alias="asc"
+set -euo pipefail
+
+out="${1:-screenshot.png}"
+remote=/sdcard/mise-screenshot.png
+
+# adb exec-out screencap returns a blank image on some devices, so write the
+# file on the device and pull it back instead.
+adb shell screencap -p "$remote"
+adb pull "$remote" "$out"
+adb shell rm -f "$remote"
+
+echo "Saved to $out"

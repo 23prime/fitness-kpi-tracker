@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#MISE description="Wait for the target device and report what adb sees"
+#MISE alias="acn"
+set -euo pipefail
+
+adb start-server >/dev/null 2>&1 || true
+
+for _ in $(seq 1 10); do
+  if [[ "$(adb get-state 2>/dev/null || true)" == "device" ]]; then
+    adb devices -l
+    exit 0
+  fi
+  sleep 1
+done
+
+attached=$(adb devices | awk '/[[:space:]]device$/ { count++ } END { print count + 0 }')
+
+if [[ "$attached" -eq 0 ]]; then
+  echo "No device found. Turn wireless debugging on, or see docs/running-on-device.md to pair one." >&2
+elif [[ -z "${ANDROID_SERIAL:-}" ]]; then
+  # Wireless debugging registers a device twice, once by IP and once over mDNS,
+  # which leaves adb and Gradle without a single target.
+  echo "$attached devices are attached and ANDROID_SERIAL is unset, so adb cannot pick one." >&2
+  echo "Copy .env.example to .env and set ANDROID_SERIAL to a name listed below." >&2
+else
+  echo "ANDROID_SERIAL=$ANDROID_SERIAL is not among the attached devices." >&2
+fi
+
+adb devices -l >&2
+exit 1

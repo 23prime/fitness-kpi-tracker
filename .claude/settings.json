@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mise run *)"
+      "Bash(mise run *)",
+      "Bash(adb devices*)",
+      "Bash(adb shell dumpsys*)",
+      "Bash(adb shell pidof*)",
+      "Bash(adb shell getprop*)"
     ]
   },
   "hooks": {

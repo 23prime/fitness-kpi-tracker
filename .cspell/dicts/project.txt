@@ -17,3 +17,10 @@ Jetpack
 cmdline
 screencap
 sdcard
+dumpsys
+getprop
+Keyguard
+akita
+pidof
+pipefail
+mdns
