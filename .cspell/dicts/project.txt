@@ -25,3 +25,4 @@ pidof
 pipefail
 mdns
 bmgr
+kotlinx
