@@ -13,10 +13,14 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,30 +45,43 @@ fun EntryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDatePicker by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val saveSuccessMessage = stringResource(R.string.entry_save_success)
 
-    Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(text = uiState.date.toString(), modifier = Modifier.weight(1f))
-            TextButton(onClick = { showDatePicker = true }) {
-                Text(stringResource(R.string.entry_button_select_date))
-            }
+    LaunchedEffect(viewModel) {
+        viewModel.saveCompleted.collect {
+            snackbarHostState.showSnackbar(saveSuccessMessage)
         }
+    }
 
-        EntryFields(
-            uiState = uiState,
-            onFieldChanged = viewModel::onFieldChanged,
-            onClearField = viewModel::onClearField,
-        )
-
-        Button(
-            onClick = { viewModel.onSave() },
-            enabled = uiState.isSaveEnabled,
-            modifier = Modifier.fillMaxWidth(),
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(stringResource(R.string.entry_button_save))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = uiState.date.toString(), modifier = Modifier.weight(1f))
+                TextButton(onClick = { showDatePicker = true }) {
+                    Text(stringResource(R.string.entry_button_select_date))
+                }
+            }
+
+            EntryFields(
+                uiState = uiState,
+                onFieldChanged = viewModel::onFieldChanged,
+                onClearField = viewModel::onClearField,
+            )
+
+            Button(
+                onClick = { viewModel.onSave() },
+                enabled = uiState.isSaveEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.entry_button_save))
+            }
         }
     }
 

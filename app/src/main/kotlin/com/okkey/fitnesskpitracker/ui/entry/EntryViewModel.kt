@@ -4,8 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okkey.fitnesskpitracker.data.ManualField
 import com.okkey.fitnesskpitracker.data.MetricsRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -34,6 +37,9 @@ class EntryViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(EntryUiState(date = initialDate))
     val uiState: StateFlow<EntryUiState> = _uiState.asStateFlow()
+
+    private val _saveCompleted = MutableSharedFlow<Unit>()
+    val saveCompleted: SharedFlow<Unit> = _saveCompleted.asSharedFlow()
 
     // Bumped on every load (date switch, field clear) and every user edit, so a
     // slow, out-of-order load completion never clobbers a newer load or an edit
@@ -84,6 +90,7 @@ class EntryViewModel(
                 weightKg = state.weightInput.toDoubleOrNull(),
                 workoutSets = state.workoutSetsInput.toIntOrNull(),
             )
+            _saveCompleted.emit(Unit)
         }
     }
 

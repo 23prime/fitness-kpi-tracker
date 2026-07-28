@@ -7,6 +7,8 @@ import com.okkey.fitnesskpitracker.data.ManualField
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -151,6 +153,20 @@ class EntryViewModelTest {
             assertEquals(5.0, saved.cyclingDistanceKm)
             assertEquals(59.5, saved.weightKg)
             assertEquals(21, saved.workoutSets)
+        }
+
+    @Test
+    fun onSave_emitsSaveCompletedEvent() =
+        runTest {
+            val events = mutableListOf<Unit>()
+            val collectJob = launch(dispatcher) { viewModel.saveCompleted.toList(events) }
+
+            viewModel.onFieldChanged(ManualField.STEPS, "4000")
+            viewModel.onSave()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, events.size)
+            collectJob.cancel()
         }
 
     @Test
