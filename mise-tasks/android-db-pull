@@ -7,6 +7,7 @@ package=com.okkey.fitnesskpitracker
 db_name=fitness-kpi-tracker.db
 out_dir="${1:-.}/db"
 
+umask 077
 mkdir -p "$out_dir"
 
 for suffix in "" "-wal" "-shm"; do
