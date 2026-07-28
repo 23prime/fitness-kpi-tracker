@@ -144,6 +144,11 @@ description = "Build, test, and lint the Android app"
 run = "./gradlew assembleDebug test lintDebug"
 alias = "acf"
 
+[tasks.android-test]
+description = "Run Android unit tests"
+run = "./gradlew test"
+alias = "at"
+
 [tasks.android-install]
 description = "Install the debug build on the connected device and launch it"
 run = [
