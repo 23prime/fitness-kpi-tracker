@@ -1,0 +1,66 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "12e4cdacc98e6bded2382fd3d218076f",
+    "entities": [
+      {
+        "tableName": "daily_metrics",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `stepsHealthConnect` INTEGER, `stepsManual` INTEGER, `cyclingDistanceKmHealthConnect` REAL, `cyclingDistanceKmManual` REAL, `weightKgHealthConnect` REAL, `weightKgManual` REAL, `workoutSets` INTEGER, PRIMARY KEY(`date`))",
+        "fields": [
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stepsHealthConnect",
+            "columnName": "stepsHealthConnect",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "stepsManual",
+            "columnName": "stepsManual",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cyclingDistanceKmHealthConnect",
+            "columnName": "cyclingDistanceKmHealthConnect",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cyclingDistanceKmManual",
+            "columnName": "cyclingDistanceKmManual",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "weightKgHealthConnect",
+            "columnName": "weightKgHealthConnect",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "weightKgManual",
+            "columnName": "weightKgManual",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "workoutSets",
+            "columnName": "workoutSets",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "date"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '12e4cdacc98e6bded2382fd3d218076f')"
+    ]
+  }
+}
