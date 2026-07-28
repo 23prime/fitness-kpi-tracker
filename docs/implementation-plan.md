@@ -7,7 +7,7 @@
 
 - 要件は [docs/requirements.md](requirements.md)で確定済みである。
 - 技術スタックとアーキテクチャは [ADR 0001](adr/0001-tech-stack-and-architecture.md)で決定済みである。単一モジュール、`ui` / `domain` / `data` の 3 層、DI は手動。
-- 現状のコードは Compose の空画面（`ui/MainActivity.kt`）のみで、`domain` / `data` は未作成である。
+- `ui` の Compose 画面（`ui/MainActivity.kt`）、`data` の Room 永続化層（#7）、`domain` の計算ロジック（#8）はすでに実装済みである。
 
 ## 全体設計
 
@@ -53,10 +53,9 @@ SQLite に日付型はなく、ストレージクラスは `NULL` / `INTEGER` / 
 | `DAILY_SCORE_TARGET` | `150.0` | 1 日あたりの目標スコア。 |
 | `WEIGHT_TARGET_KG` | `59.0` | 目標体重。 |
 | `WEIGHT_DEADLINE` | `2026-09-30` | 目標体重の期限。 |
-| `WEIGHT_BASELINE_KG` | `60.0` | 目標設定時点の体重。 |
-| `WEIGHT_BASELINE_DATE` | `2026-07-27` | 目標を設定した日。 |
+| `WEIGHT_BASELINE_KG` | `60.0` | 目標設定時点（2026-07-27）の体重。 |
 
-`WEIGHT_BASELINE_KG` と `WEIGHT_BASELINE_DATE` は要件定義書に明示がないが、「目標設定時点の体重を基準とした進捗」の算出に必須のため追加する。
+`WEIGHT_BASELINE_KG` は要件定義書に明示がないが、「目標設定時点の体重を基準とした進捗」の算出に必須のため追加する。目標設定日はどの計算式からも参照されないため、定数としては持たず `WEIGHT_BASELINE_KG` の説明に残す。
 
 目標値は上表の値で確定とする。
 
@@ -282,7 +281,7 @@ Room のデータがバックアップ・復元されることを実機で確認
 | 箇所 | 内容 |
 | --- | --- |
 | バックアップ設定ファイル | 要件定義書は `backup_rules.xml` としているが、minSdk 34 では `android:fullBackupContent`（`backup_rules.xml`）は参照されず、`android:dataExtractionRules`（`data_extraction_rules.xml`）のみが有効である。#12 で要件定義書を修正する。 |
-| 目標設定時点の体重と設定日 | 進捗計算に必須だが要件定義書に明示がない。コード内定数として追加する。 |
+| 目標設定時点の体重 | 進捗計算に必須だが要件定義書に明示がない。コード内定数として追加する。設定日はどの計算式からも参照されないため、定数の説明にのみ残す。 |
 | 「現在の体重」の定義 | 未定義のため、記録がある最新の日の値と定める。 |
 | 進捗が 0% 未満・100% 超の場合 | 未定義のため、数値はそのまま表示し、進捗バーの描画時のみ範囲に収めると定める。 |
 
