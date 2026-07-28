@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#MISE description="Pull the app's Room database from the device and dump its tables"
+#MISE alias="adb-pull"
+set -euo pipefail
+
+package=com.okkey.fitnesskpitracker
+db_name=fitness-kpi-tracker.db
+out_dir="${1:-.}/db"
+
+mkdir -p "$out_dir"
+
+for suffix in "" "-wal" "-shm"; do
+  adb exec-out run-as "$package" cat "databases/${db_name}${suffix}" > "$out_dir/${db_name}${suffix}"
+done
+
+echo "Pulled to $out_dir/$db_name"
+sqlite3 "$out_dir/$db_name" "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'room_%';" |
+  while read -r table; do
+    echo "--- $table ---"
+    sqlite3 "$out_dir/$db_name" ".headers on" ".mode column" "SELECT * FROM \"$table\";"
+  done
