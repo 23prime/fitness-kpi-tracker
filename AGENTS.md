@@ -29,3 +29,5 @@ Run these via `mise run <task>` (or `./gradlew <task>` directly once `mise run s
 - `mise run android-check` — ktlint + detekt (used by pre-commit via `mise run check`).
 - `mise run android-test` — run unit tests only (`./gradlew test`).
 - `mise run android-check-full` — `assembleDebug`, `test`, and `lintDebug` (used by pre-push/CI via `mise run check-full`).
+
+detekt's `MagicNumber` rule flags numeric literals such as `LocalDate.of(2026, 9, 30)`. When adding date constants, use `LocalDate.parse("2026-09-30")` instead to avoid `mise run android-check`/pre-commit failures.
