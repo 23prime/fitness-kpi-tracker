@@ -1,5 +1,6 @@
 {
   "recommendations": [
+    "JetBrains.kotlin-server",
     "tamasfe.even-better-toml",
     "GitHub.vscode-github-actions",
     "zizmor.zizmor-vscode",
