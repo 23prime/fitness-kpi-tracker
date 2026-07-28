@@ -5,17 +5,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.ui.res.stringResource
-import com.okkey.fitnesskpitracker.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.okkey.fitnesskpitracker.FitnessKpiApplication
+import com.okkey.fitnesskpitracker.ui.entry.EntryScreen
+import com.okkey.fitnesskpitracker.ui.entry.EntryViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val application = application as FitnessKpiApplication
+        val viewModelFactory = EntryViewModelFactory(application.metricsRepository)
         setContent {
             MaterialTheme {
                 Surface {
-                    Text(text = stringResource(R.string.app_name))
+                    EntryScreen(viewModel(factory = viewModelFactory))
                 }
             }
         }

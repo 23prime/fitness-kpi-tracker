@@ -96,6 +96,9 @@ ksp {
 
 detekt {
     buildUponDefaultConfig = true
+    // Composable functions are conventionally PascalCase; default detekt naming rules
+    // don't know about Compose, so this overrides FunctionNaming for @Composable functions.
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
 }
 
 ktlint {

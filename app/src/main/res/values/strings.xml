@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Fitness KPI Tracker</string>
+    <string name="entry_label_steps">歩数</string>
+    <string name="entry_label_cycling_distance">サイクリング距離 (km)</string>
+    <string name="entry_label_weight">体重 (kg)</string>
+    <string name="entry_label_workout_sets">セット数</string>
+    <string name="entry_button_save">保存</string>
+    <string name="entry_button_clear">取り消し</string>
+    <string name="entry_button_select_date">日付を選択</string>
 </resources>
