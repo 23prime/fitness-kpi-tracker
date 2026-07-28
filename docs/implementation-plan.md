@@ -239,6 +239,8 @@ Android に依存しない `domain` パッケージを作り、スコアと進�
 
 Health Connect から歩数・サイクリング距離・体重を取得し、手入力値を残したまま反映する。
 
+`EntryViewModel.onSave()`（#9）は、表示中の実効値（`manual ?: healthConnect`）を4項目まとめて`saveManual`に渡す設計になっている。Health Connect値が常に`null`である#9の時点では無害だが、本Issueで実データが入るようになると、ユーザーが1項目だけ編集して保存した場合に残り3項目のHealth Connect由来の表示値もそのまま手入力値として永続化されてしまう。編集した項目だけを送る（変更検知またはフィールド単位の差分）よう`EntryViewModel`/`MetricsRepository`を見直す必要がある。
+
 含むもの。
 
 - Manifest への権限宣言と権限根拠画面の `intent-filter`。
