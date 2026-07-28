@@ -54,6 +54,10 @@ class EntryViewModel(
         loadDate(date)
     }
 
+    fun onReload() {
+        loadDate(_uiState.value.date)
+    }
+
     fun onFieldChanged(
         field: ManualField,
         text: String,

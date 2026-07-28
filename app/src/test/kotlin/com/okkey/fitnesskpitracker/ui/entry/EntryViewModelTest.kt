@@ -88,6 +88,19 @@ class EntryViewModelTest {
         }
 
     @Test
+    fun onReload_discardsUnsavedEditsAndReloadsPersistedValues() =
+        runTest {
+            repository.saveManual(today, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onFieldChanged(ManualField.STEPS, "9999")
+
+            viewModel.onReload()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals("4000", viewModel.uiState.value.stepsInput)
+        }
+
+    @Test
     fun onFieldChanged_stepsNegativeValue_setsErrorAndDisablesSave() {
         viewModel.onFieldChanged(ManualField.STEPS, "-1")
 

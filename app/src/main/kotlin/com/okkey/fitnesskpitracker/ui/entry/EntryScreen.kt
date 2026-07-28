@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -64,7 +65,16 @@ fun EntryScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.entry_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.entry_title)) },
+                actions = {
+                    IconButton(onClick = viewModel::onReload) {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.entry_button_reload))
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Column(
