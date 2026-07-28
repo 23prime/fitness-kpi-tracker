@@ -44,19 +44,4 @@ class MetricsRepository(
             workoutSets = workoutSets,
         )
     }
-
-    suspend fun clearManualField(
-        date: LocalDate,
-        field: ManualField,
-    ) {
-        val existing = dao.findByDate(date) ?: return
-        dao.upsertManual(
-            date,
-            stepsManual = if (field == ManualField.STEPS) null else existing.stepsManual,
-            cyclingDistanceKmManual =
-                if (field == ManualField.CYCLING_DISTANCE) null else existing.cyclingDistanceKmManual,
-            weightKgManual = if (field == ManualField.WEIGHT) null else existing.weightKgManual,
-            workoutSets = if (field == ManualField.WORKOUT_SETS) null else existing.workoutSets,
-        )
-    }
 }

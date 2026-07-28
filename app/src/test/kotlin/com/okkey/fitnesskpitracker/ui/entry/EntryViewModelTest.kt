@@ -170,20 +170,35 @@ class EntryViewModelTest {
         }
 
     @Test
-    fun onClearField_steps_clearsPersistedValueAndReloadsField() =
+    fun onClearField_steps_clearsInputLocallyWithoutTouchingRepository() =
         runTest {
             viewModel.onFieldChanged(ManualField.STEPS, "4000")
             viewModel.onFieldChanged(ManualField.CYCLING_DISTANCE, "5.0")
-            viewModel.onFieldChanged(ManualField.WEIGHT, "59.5")
-            viewModel.onFieldChanged(ManualField.WORKOUT_SETS, "21")
-            viewModel.onSave()
-            dispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onClearField(ManualField.STEPS)
-            dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
             assertEquals("", state.stepsInput)
             assertEquals("5.0", state.cyclingDistanceInput)
+            val persisted = repository.findEffectiveByDate(today)
+            assertNull(persisted.steps)
+            assertNull(persisted.cyclingDistanceKm)
+        }
+
+    @Test
+    fun onClearField_thenSave_persistsClearedFieldAsNull() =
+        runTest {
+            viewModel.onFieldChanged(ManualField.STEPS, "4000")
+            viewModel.onFieldChanged(ManualField.CYCLING_DISTANCE, "5.0")
+            viewModel.onSave()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onClearField(ManualField.STEPS)
+            viewModel.onSave()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val saved = repository.findEffectiveByDate(today)
+            assertNull(saved.steps)
+            assertEquals(5.0, saved.cyclingDistanceKm)
         }
 }

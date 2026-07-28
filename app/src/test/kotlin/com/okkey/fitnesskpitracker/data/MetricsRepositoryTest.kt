@@ -75,36 +75,4 @@ class MetricsRepositoryTest {
             assertEquals(10.0, values.cyclingDistanceKm)
             assertEquals(60.0, values.weightKg)
         }
-
-    @Test
-    fun clearManualField_steps_resetsOnlyStepsAndFallsBackToHealthConnect() =
-        runTest {
-            val date = LocalDate.of(2026, 7, 28)
-            database.dailyMetricsDao().upsertHealthConnect(
-                date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = null,
-                weightKgHealthConnect = null,
-            )
-            repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = 5.0, weightKg = 59.5, workoutSets = 21)
-
-            repository.clearManualField(date, ManualField.STEPS)
-
-            val values = repository.findEffectiveByDate(date)
-            assertEquals(8_000L, values.steps)
-            assertEquals(5.0, values.cyclingDistanceKm)
-            assertEquals(59.5, values.weightKg)
-            assertEquals(21, values.workoutSets)
-        }
-
-    @Test
-    fun clearManualField_noExistingRecord_doesNothing() =
-        runTest {
-            val date = LocalDate.of(2026, 7, 28)
-
-            repository.clearManualField(date, ManualField.WEIGHT)
-
-            val values = repository.findEffectiveByDate(date)
-            assertNull(values.weightKg)
-        }
 }

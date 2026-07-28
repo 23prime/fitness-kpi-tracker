@@ -95,12 +95,25 @@ class EntryViewModel(
     }
 
     fun onClearField(field: ManualField) {
-        val date = _uiState.value.date
-        val requestGeneration = ++generation
-        viewModelScope.launch {
-            repository.clearManualField(date, field)
-            refresh(date, requestGeneration)
-        }
+        generation++
+        _uiState.value =
+            when (field) {
+                ManualField.STEPS -> {
+                    _uiState.value.copy(stepsInput = "", stepsError = null)
+                }
+
+                ManualField.CYCLING_DISTANCE -> {
+                    _uiState.value.copy(cyclingDistanceInput = "", cyclingDistanceError = null)
+                }
+
+                ManualField.WEIGHT -> {
+                    _uiState.value.copy(weightInput = "", weightError = null)
+                }
+
+                ManualField.WORKOUT_SETS -> {
+                    _uiState.value.copy(workoutSetsInput = "", workoutSetsError = null)
+                }
+            }
     }
 
     private fun loadDate(date: LocalDate) {
