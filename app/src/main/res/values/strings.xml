@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Fitness KPI Tracker</string>
+    <string name="entry_title">入力・補正</string>
     <string name="entry_label_steps">歩数</string>
     <string name="entry_label_cycling_distance">サイクリング距離 (km)</string>
     <string name="entry_label_weight">体重 (kg)</string>
