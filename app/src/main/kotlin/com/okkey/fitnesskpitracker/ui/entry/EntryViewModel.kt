@@ -26,6 +26,7 @@ data class EntryUiState(
     val cyclingDistanceError: String? = null,
     val weightError: String? = null,
     val workoutSetsError: String? = null,
+    val isLoading: Boolean = false,
 ) {
     val isSaveEnabled: Boolean
         get() = stepsError == null && cyclingDistanceError == null && weightError == null && workoutSetsError == null
@@ -122,6 +123,7 @@ class EntryViewModel(
 
     private fun loadDate(date: LocalDate) {
         val requestGeneration = ++generation
+        _uiState.value = _uiState.value.copy(isLoading = true)
         viewModelScope.launch {
             refresh(date, requestGeneration)
         }
@@ -140,6 +142,7 @@ class EntryViewModel(
                 cyclingDistanceInput = values.cyclingDistanceKm?.toString() ?: "",
                 weightInput = values.weightKg?.toString() ?: "",
                 workoutSetsInput = values.workoutSets?.toString() ?: "",
+                isLoading = false,
             )
     }
 

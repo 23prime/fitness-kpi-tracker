@@ -24,6 +24,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,31 +78,18 @@ fun EntryScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(innerPadding).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = uiState.date.format(DATE_DISPLAY_FORMATTER), modifier = Modifier.weight(1f))
-                TextButton(onClick = { showDatePicker = true }) {
-                    Text(stringResource(R.string.entry_button_select_date))
-                }
-            }
-
-            EntryFields(
-                uiState = uiState,
-                onFieldChanged = viewModel::onFieldChanged,
-                onClearField = viewModel::onClearField,
-            )
-
-            Button(
-                onClick = { viewModel.onSave() },
-                enabled = uiState.isSaveEnabled,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.entry_button_save))
-            }
-        }
+        EntryContent(
+            uiState = uiState,
+            actions =
+                EntryActions(
+                    onSelectDateRequested = { showDatePicker = true },
+                    onFieldChanged = viewModel::onFieldChanged,
+                    onClearField = viewModel::onClearField,
+                    onSave = viewModel::onSave,
+                    onReload = viewModel::onReload,
+                ),
+            modifier = Modifier.padding(innerPadding),
+        )
     }
 
     if (showDatePicker) {
@@ -110,6 +98,54 @@ fun EntryScreen(
             onDateSelected = viewModel::onDateSelected,
             onDismissRequest = { showDatePicker = false },
         )
+    }
+}
+
+private data class EntryActions(
+    val onSelectDateRequested: () -> Unit,
+    val onFieldChanged: (ManualField, String) -> Unit,
+    val onClearField: (ManualField) -> Unit,
+    val onSave: () -> Unit,
+    val onReload: () -> Unit,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EntryContent(
+    uiState: EntryUiState,
+    actions: EntryActions,
+    modifier: Modifier = Modifier,
+) {
+    PullToRefreshBox(
+        isRefreshing = uiState.isLoading,
+        onRefresh = actions.onReload,
+        modifier = modifier.fillMaxSize(),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = uiState.date.format(DATE_DISPLAY_FORMATTER), modifier = Modifier.weight(1f))
+                TextButton(onClick = actions.onSelectDateRequested) {
+                    Text(stringResource(R.string.entry_button_select_date))
+                }
+            }
+
+            EntryFields(
+                uiState = uiState,
+                onFieldChanged = actions.onFieldChanged,
+                onClearField = actions.onClearField,
+            )
+
+            Button(
+                onClick = actions.onSave,
+                enabled = uiState.isSaveEnabled,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.entry_button_save))
+            }
+        }
     }
 }
 

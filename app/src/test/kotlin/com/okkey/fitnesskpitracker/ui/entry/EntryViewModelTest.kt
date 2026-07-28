@@ -67,6 +67,7 @@ class EntryViewModelTest {
             assertEquals("", state.weightInput)
             assertEquals("", state.workoutSetsInput)
             assertTrue(state.isSaveEnabled)
+            assertFalse(state.isLoading)
         }
 
     @Test
