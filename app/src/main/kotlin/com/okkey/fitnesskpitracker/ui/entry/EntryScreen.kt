@@ -37,6 +37,9 @@ import com.okkey.fitnesskpitracker.data.ManualField
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+
+private val DATE_DISPLAY_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,7 +68,7 @@ fun EntryScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = uiState.date.toString(), modifier = Modifier.weight(1f))
+                Text(text = uiState.date.format(DATE_DISPLAY_FORMATTER), modifier = Modifier.weight(1f))
                 TextButton(onClick = { showDatePicker = true }) {
                     Text(stringResource(R.string.entry_button_select_date))
                 }
