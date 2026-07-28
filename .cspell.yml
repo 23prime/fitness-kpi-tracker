@@ -5,6 +5,9 @@ version: '0.2'
 
 enableGlobDot: true
 
+ignoreRegExpList:
+  - '0x[0-9a-fA-F]+L?'
+
 dictionaryDefinitions:
   - name: base-dict
     path: './.cspell/dicts/base.txt'
