@@ -20,6 +20,7 @@ Everything routes through mise tasks, and `Bash(mise run *)` is already allowed,
 | `mise run android-connect` | Waits for the target device, then prints `adb devices -l`. |
 | `mise run android-install` | Runs android-connect, then `installDebug`, then launches MainActivity. |
 | `mise run android-screenshot [PATH]` | Captures a screenshot. Defaults to `screenshot.png`. |
+| `mise run android-status` | Reports wakefulness, keyguard (lock) state, and the foreground app. |
 
 Start with `android-connect`. `android-install` already calls it, so running both is redundant.
 
@@ -42,12 +43,7 @@ Run `android-connect` once, then ask. Do not sit in a retry loop — it already 
 - **`more than one device/emulator`.** Wireless debugging registers the device twice, once as `192.168.x.x:PORT` and once as `adb-<serial>-XXXX._adb-tls-connect._tcp`. `ANDROID_SERIAL` resolves this by naming the target, so there is no need to disconnect anything. Prefer the mDNS name in `.env`: the IP port changes every time wireless debugging is toggled, the mDNS name does not.
 - **mise's `.env` beats the caller's environment.** `ANDROID_SERIAL=other mise run android-connect` silently uses the `.env` value. To override, run the script directly: `ANDROID_SERIAL=other ./mise-tasks/android-connect`.
 - **Screenshots come out black.** `adb exec-out screencap -p` returns a blank image on this device. `android-screenshot` writes the file on the device and pulls it instead. Do not reach for `exec-out`.
-- **A black screenshot can also mean the screen is off or locked**, which is not an app bug. Check before concluding anything:
-
-  ```bash
-  adb shell dumpsys power | grep mWakefulness
-  adb shell dumpsys window | grep isKeyguardShowing
-  ```
+- **A black screenshot can also mean the screen is off or locked**, which is not an app bug. Check before concluding anything: `mise run android-status`.
 
 - **The app targets SDK 36 on an API 37 device.** That is a deliberate decision recorded in ADR 0001, not drift to correct.
 - **Screenshot coordinates are not device coordinates.** `android-screenshot`'s image is displayed scaled down (e.g. a 1080x2400 device shows as 900x2000), so reading a tap target's position off the displayed image and passing it to `adb shell input tap X Y` misses — the multiplier needed to convert varies per image. Get exact coordinates instead:
@@ -65,5 +61,6 @@ Run `android-connect` once, then ask. Do not sit in a retry loop — it already 
 
 ```bash
 adb shell pidof com.okkey.fitnesskpitracker
-adb shell dumpsys window | grep mCurrentFocus
 ```
+
+`mise run android-status` reports the foreground app (among other things).

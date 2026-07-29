@@ -99,4 +99,4 @@ mise run android-screenshot [出力先]
 | `more than one device/emulator` | 同じ端末が IP 経由と mDNS 経由の 2 エントリで登録されている。手順 3 のとおり `.env` の `ANDROID_SERIAL` で対象を明示する。 |
 | `ANDROID_SERIAL は設定したのに対象が見つからない` | `mise run` は `.env` の値を呼び出し元の環境変数より優先する。一時的に別の端末を指定したい場合は `ANDROID_SERIAL=... ./mise-tasks/android-connect` のようにスクリプトを直接実行する。 |
 | `INSTALL_FAILED_UPDATE_INCOMPATIBLE` | 署名の異なる同名アプリが入っている。`./gradlew uninstallDebug` で削除してから入れ直す。 |
-| スクリーンショットが真っ黒になる | 画面が消灯・ロックされている可能性がある。`adb shell dumpsys power \| grep mWakefulness` と `adb shell dumpsys window \| grep isKeyguardShowing` で確認する。どちらも問題なければ `adb exec-out` を使っていないか確認する。 |
+| スクリーンショットが真っ黒になる | 画面が消灯・ロックされている可能性がある。`mise run android-status` で確認する。どちらも問題なければ `adb exec-out` を使っていないか確認する。 |
