@@ -75,4 +75,29 @@ class MetricsRepositoryTest {
             assertEquals(10.0, values.cyclingDistanceKm)
             assertEquals(60.0, values.weightKg)
         }
+
+    @Test
+    fun findLatestWeightKgOnOrBefore_noRecord_returnsNull() =
+        runTest {
+            val result = repository.findLatestWeightKgOnOrBefore(LocalDate.of(2026, 7, 28))
+
+            assertNull(result)
+        }
+
+    @Test
+    fun findLatestWeightKgOnOrBefore_fallsBackToMostRecentPriorRecord() =
+        runTest {
+            val recordedDate = LocalDate.of(2026, 7, 20)
+            repository.saveManual(
+                recordedDate,
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 59.5,
+                workoutSets = null,
+            )
+
+            val result = repository.findLatestWeightKgOnOrBefore(LocalDate.of(2026, 7, 28))
+
+            assertEquals(59.5, result)
+        }
 }

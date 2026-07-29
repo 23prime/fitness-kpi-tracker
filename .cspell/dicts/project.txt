@@ -27,3 +27,5 @@ mdns
 bmgr
 kotlinx
 pulltorefresh
+automirrored
+uiautomator

@@ -29,6 +29,11 @@ class MetricsRepository(
         )
     }
 
+    suspend fun findLatestWeightKgOnOrBefore(date: LocalDate): Double? {
+        val entity = dao.findLatestWithWeightOnOrBefore(date)
+        return entity?.weightKgManual ?: entity?.weightKgHealthConnect
+    }
+
     suspend fun saveManual(
         date: LocalDate,
         steps: Long?,

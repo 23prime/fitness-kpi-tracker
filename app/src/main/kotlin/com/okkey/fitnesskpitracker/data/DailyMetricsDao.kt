@@ -19,6 +19,13 @@ interface DailyMetricsDao {
     @Query("SELECT * FROM daily_metrics WHERE date = :date")
     suspend fun findByDate(date: LocalDate): DailyMetricsEntity?
 
+    @Query(
+        "SELECT * FROM daily_metrics " +
+            "WHERE date <= :date AND (weightKgManual IS NOT NULL OR weightKgHealthConnect IS NOT NULL) " +
+            "ORDER BY date DESC LIMIT 1",
+    )
+    suspend fun findLatestWithWeightOnOrBefore(date: LocalDate): DailyMetricsEntity?
+
     @Insert
     suspend fun insert(entity: DailyMetricsEntity)
 

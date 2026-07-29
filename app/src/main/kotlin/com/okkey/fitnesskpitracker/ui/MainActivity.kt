@@ -5,12 +5,33 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.okkey.fitnesskpitracker.FitnessKpiApplication
+import com.okkey.fitnesskpitracker.R
+import com.okkey.fitnesskpitracker.data.MetricsRepository
+import com.okkey.fitnesskpitracker.ui.dashboard.DashboardScreen
+import com.okkey.fitnesskpitracker.ui.dashboard.DashboardViewModelFactory
 import com.okkey.fitnesskpitracker.ui.entry.EntryScreen
 import com.okkey.fitnesskpitracker.ui.entry.EntryViewModelFactory
 import android.graphics.Color as AndroidColor
@@ -32,6 +53,8 @@ private val BlueDarkColorScheme =
         onSecondary = Color(COLOR_ON_SECONDARY),
     )
 
+private enum class AppScreen { DASHBOARD, ENTRY }
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,13 +63,41 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
         )
         val application = application as FitnessKpiApplication
-        val viewModelFactory = EntryViewModelFactory(application.metricsRepository)
+        val repository = application.metricsRepository
         setContent {
             MaterialTheme(colorScheme = BlueDarkColorScheme) {
                 Surface {
-                    EntryScreen(viewModel(factory = viewModelFactory))
+                    FitnessKpiApp(repository)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FitnessKpiApp(repository: MetricsRepository) {
+    var selectedScreen by rememberSaveable { mutableStateOf(AppScreen.DASHBOARD) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            when (selectedScreen) {
+                AppScreen.DASHBOARD -> DashboardScreen(viewModel(factory = DashboardViewModelFactory(repository)))
+                AppScreen.ENTRY -> EntryScreen(viewModel(factory = EntryViewModelFactory(repository)))
+            }
+        }
+        NavigationBar {
+            NavigationBarItem(
+                selected = selectedScreen == AppScreen.DASHBOARD,
+                onClick = { selectedScreen = AppScreen.DASHBOARD },
+                icon = { Icon(Icons.Default.Home, contentDescription = null) },
+                label = { Text(stringResource(R.string.nav_dashboard)) },
+            )
+            NavigationBarItem(
+                selected = selectedScreen == AppScreen.ENTRY,
+                onClick = { selectedScreen = AppScreen.ENTRY },
+                icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
+                label = { Text(stringResource(R.string.nav_entry)) },
+            )
         }
     }
 }
