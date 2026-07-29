@@ -4,8 +4,12 @@
 set -euo pipefail
 
 echo "Wakefulness:"
-adb shell dumpsys power | grep mWakefulness || echo "  (not found)"
+power_dump="$(adb shell dumpsys power)"
+echo "$power_dump" | grep mWakefulness || echo "  (not found)"
+
 echo "Keyguard:"
-adb shell dumpsys window | grep isKeyguardShowing || echo "  (not found)"
+window_dump="$(adb shell dumpsys window)"
+echo "$window_dump" | grep isKeyguardShowing || echo "  (not found)"
+
 echo "Foreground:"
-adb shell dumpsys window | grep mCurrentFocus || echo "  (not found)"
+echo "$window_dump" | grep mCurrentFocus || echo "  (not found)"
