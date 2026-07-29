@@ -50,6 +50,14 @@ Run `android-connect` once, then ask. Do not sit in a retry loop — it already 
   ```
 
 - **The app targets SDK 36 on an API 37 device.** That is a deliberate decision recorded in ADR 0001, not drift to correct.
+- **Screenshot coordinates are not device coordinates.** `android-screenshot`'s image is displayed scaled down (e.g. a 1080x2400 device shows as 900x2000), so reading a tap target's position off the displayed image and passing it to `adb shell input tap X Y` misses — the multiplier needed to convert varies per image. Get exact coordinates instead:
+
+  ```bash
+  adb shell uiautomator dump /sdcard/ui.xml
+  adb shell cat /sdcard/ui.xml | grep -o 'text="TARGET"[^/]*bounds="[^"]*"'
+  ```
+
+  `bounds="[x1,y1][x2,y2]"` is in real device pixels; tap the center of that rect.
 
 ## Verifying the App Actually Ran
 

@@ -28,3 +28,4 @@ bmgr
 kotlinx
 pulltorefresh
 automirrored
+uiautomator
