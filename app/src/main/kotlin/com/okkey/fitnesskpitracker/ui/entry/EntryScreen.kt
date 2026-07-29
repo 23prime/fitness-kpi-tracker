@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -122,6 +123,7 @@ private fun EntryContent(
     actions: EntryActions,
     modifier: Modifier = Modifier,
 ) {
+    val focusManager = LocalFocusManager.current
     PullToRefreshBox(
         isRefreshing = uiState.isLoading,
         onRefresh = actions.onReload,
@@ -145,7 +147,10 @@ private fun EntryContent(
             )
 
             Button(
-                onClick = actions.onSave,
+                onClick = {
+                    focusManager.clearFocus()
+                    actions.onSave()
+                },
                 enabled = uiState.isSaveEnabled,
                 modifier = Modifier.fillMaxWidth(),
             ) {
