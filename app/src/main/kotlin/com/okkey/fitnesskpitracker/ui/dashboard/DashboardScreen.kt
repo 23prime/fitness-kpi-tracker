@@ -170,7 +170,7 @@ private fun ActivityScoreDonutChart(
         modifier =
             Modifier
                 .size(DONUT_SIZE)
-                .semantics { contentDescription = chartDescription },
+                .semantics(mergeDescendants = true) { contentDescription = chartDescription },
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
