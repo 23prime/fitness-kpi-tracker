@@ -172,6 +172,59 @@ class DailyMetricsDaoTest {
             assertEquals(listOf(day1, day2), rows.map { it.date })
         }
 
+    @Test
+    fun findLatestWithWeightOnOrBefore_noRows_returnsNull() =
+        runTest {
+            val result = dao.findLatestWithWeightOnOrBefore(LocalDate.of(2026, 7, 28))
+
+            assertNull(result)
+        }
+
+    @Test
+    fun findLatestWithWeightOnOrBefore_returnsMostRecentRowWithWeightOnOrBeforeDate() =
+        runTest {
+            val day1 = LocalDate.of(2026, 7, 20)
+            val day2 = LocalDate.of(2026, 7, 25)
+            val dayAfter = LocalDate.of(2026, 7, 29)
+            dao.upsertManual(
+                day1,
+                stepsManual = null,
+                cyclingDistanceKmManual = null,
+                weightKgManual = 60.0,
+                workoutSets = null,
+            )
+            dao.upsertManual(
+                day2,
+                stepsManual = null,
+                cyclingDistanceKmManual = null,
+                weightKgManual = 59.5,
+                workoutSets = null,
+            )
+            dao.upsertManual(
+                dayAfter,
+                stepsManual = null,
+                cyclingDistanceKmManual = null,
+                weightKgManual = 59.0,
+                workoutSets = null,
+            )
+
+            val result = dao.findLatestWithWeightOnOrBefore(LocalDate.of(2026, 7, 28))
+
+            assertEquals(day2, result?.date)
+            assertEquals(59.5, result?.weightKgManual)
+        }
+
+    @Test
+    fun findLatestWithWeightOnOrBefore_skipsRowsWithoutWeight() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            upsertStepsOnly(date, steps = 4_000L)
+
+            val result = dao.findLatestWithWeightOnOrBefore(date)
+
+            assertNull(result)
+        }
+
     private suspend fun upsertStepsOnly(
         date: LocalDate,
         steps: Long,
