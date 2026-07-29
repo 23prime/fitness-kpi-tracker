@@ -13,8 +13,8 @@
 
     <string name="dashboard_title">ダッシュボード</string>
     <string name="dashboard_section_activity">アクティビティスコア</string>
-    <string name="dashboard_label_score">スコア</string>
-    <string name="dashboard_label_achievement">目標達成度</string>
+    <string name="dashboard_activity_chart_description">目標達成度 %1$s</string>
+    <string name="dashboard_activity_chart_achieved">目標達成</string>
     <string name="dashboard_section_weight">体重</string>
     <string name="dashboard_label_current_weight">現在値</string>
     <string name="dashboard_label_target_weight">目標値</string>

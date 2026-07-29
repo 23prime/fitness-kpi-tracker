@@ -2,6 +2,8 @@ package com.okkey.fitnesskpitracker.domain
 
 import org.junit.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ActivityScoreTest {
     @Test
@@ -37,5 +39,40 @@ class ActivityScoreTest {
         val achievement = dailyScoreAchievement(75.0)
 
         assertEquals(0.5, achievement)
+    }
+
+    @Test
+    fun isActivityScoreAchieved_belowTarget_isFalse() {
+        assertFalse(isActivityScoreAchieved(0.99))
+    }
+
+    @Test
+    fun isActivityScoreAchieved_exactlyAtTarget_isTrue() {
+        assertTrue(isActivityScoreAchieved(1.0))
+    }
+
+    @Test
+    fun isActivityScoreAchieved_aboveTarget_isTrue() {
+        assertTrue(isActivityScoreAchieved(1.5))
+    }
+
+    @Test
+    fun activityScoreArcSweepDegrees_zero_isZeroDegrees() {
+        assertEquals(0f, activityScoreArcSweepDegrees(0.0))
+    }
+
+    @Test
+    fun activityScoreArcSweepDegrees_halfway_isHalfCircle() {
+        assertEquals(180f, activityScoreArcSweepDegrees(0.5))
+    }
+
+    @Test
+    fun activityScoreArcSweepDegrees_exactlyAtTarget_isFullCircle() {
+        assertEquals(360f, activityScoreArcSweepDegrees(1.0))
+    }
+
+    @Test
+    fun activityScoreArcSweepDegrees_aboveTarget_isCappedAtFullCircle() {
+        assertEquals(360f, activityScoreArcSweepDegrees(1.5))
     }
 }

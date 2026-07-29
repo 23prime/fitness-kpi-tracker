@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Report device screen lock state, wakefulness, and the foreground app"
+#MISE alias="ast"
+set -euo pipefail
+
+echo "Wakefulness:"
+power_dump="$(adb shell dumpsys power)"
+echo "$power_dump" | grep mWakefulness || echo "  (not found)"
+
+echo "Keyguard:"
+window_dump="$(adb shell dumpsys window)"
+echo "$window_dump" | grep isKeyguardShowing || echo "  (not found)"
+
+echo "Foreground:"
+echo "$window_dump" | grep mCurrentFocus || echo "  (not found)"

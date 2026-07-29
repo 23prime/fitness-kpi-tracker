@@ -78,6 +78,9 @@ class DashboardViewModelTest {
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
+            assertEquals(5_000L, state.steps)
+            assertEquals(10.0, state.cyclingDistanceKm)
+            assertEquals(10, state.workoutSets)
             assertEquals(225.0, state.activityScore)
             assertEquals(1.5, state.activityAchievement)
         }

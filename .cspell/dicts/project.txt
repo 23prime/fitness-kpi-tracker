@@ -29,3 +29,4 @@ kotlinx
 pulltorefresh
 automirrored
 uiautomator
+drawscope
