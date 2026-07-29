@@ -2,7 +2,9 @@ package com.okkey.fitnesskpitracker.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -11,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.okkey.fitnesskpitracker.FitnessKpiApplication
 import com.okkey.fitnesskpitracker.ui.entry.EntryScreen
 import com.okkey.fitnesskpitracker.ui.entry.EntryViewModelFactory
+import android.graphics.Color as AndroidColor
 
 private const val COLOR_PRIMARY = 0xFF9ECAFFL
 private const val COLOR_ON_PRIMARY = 0xFF003258L
@@ -32,6 +35,10 @@ private val BlueDarkColorScheme =
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
+        )
         val application = application as FitnessKpiApplication
         val viewModelFactory = EntryViewModelFactory(application.metricsRepository)
         setContent {
