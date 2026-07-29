@@ -16,6 +16,9 @@ import java.time.LocalDate
 
 data class DashboardUiState(
     val date: LocalDate,
+    val steps: Long? = null,
+    val cyclingDistanceKm: Double? = null,
+    val workoutSets: Int? = null,
     val activityScore: Double = 0.0,
     val activityAchievement: Double = 0.0,
     val currentWeightKg: Double? = null,
@@ -55,6 +58,9 @@ class DashboardViewModel(
             _uiState.value =
                 DashboardUiState(
                     date = today,
+                    steps = activityValues.steps,
+                    cyclingDistanceKm = activityValues.cyclingDistanceKm,
+                    workoutSets = activityValues.workoutSets,
                     activityScore = score,
                     activityAchievement = dailyScoreAchievement(score),
                     currentWeightKg = currentWeightKg,
