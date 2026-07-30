@@ -1,5 +1,7 @@
 package com.okkey.fitnesskpitracker.ui.dashboard
 
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +29,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -47,6 +50,8 @@ private const val DONUT_START_ANGLE_DEGREES = -90f
 private val DONUT_SIZE = 160.dp
 private val DONUT_STROKE_WIDTH = 16.dp
 private val SWIPE_THRESHOLD = 96.dp
+private val BREAKDOWN_ICON_SIZE = 20.dp
+private val BREAKDOWN_ICON_SPACING = 8.dp
 
 @Composable
 internal fun ActivityScoreSection(
@@ -146,18 +151,46 @@ private fun ActivityScoreBreakdown(
     val cyclingValue = cyclingDistanceKm ?: 0.0
     val workoutSetsValue = workoutSets ?: 0
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            formatBreakdown("%,d 歩", stepsValue, stepsValue * STEPS_COEFFICIENT),
-            style = MaterialTheme.typography.bodyMedium,
+        BreakdownRow(
+            iconRes = R.drawable.ic_directions_walk,
+            text = formatBreakdown("%,d 歩", stepsValue, stepsValue * STEPS_COEFFICIENT),
+            descriptionRes = R.string.dashboard_breakdown_steps_description,
         )
-        Text(
-            formatBreakdown("%.1f km", cyclingValue, cyclingValue * CYCLING_KM_COEFFICIENT),
-            style = MaterialTheme.typography.bodyMedium,
+        BreakdownRow(
+            iconRes = R.drawable.ic_directions_bike,
+            text = formatBreakdown("%.1f km", cyclingValue, cyclingValue * CYCLING_KM_COEFFICIENT),
+            descriptionRes = R.string.dashboard_breakdown_cycling_description,
         )
-        Text(
-            formatBreakdown("%d セット", workoutSetsValue, workoutSetsValue * WORKOUT_SET_COEFFICIENT),
-            style = MaterialTheme.typography.bodyMedium,
+        BreakdownRow(
+            iconRes = R.drawable.ic_fitness_center,
+            text = formatBreakdown("%d セット", workoutSetsValue, workoutSetsValue * WORKOUT_SET_COEFFICIENT),
+            descriptionRes = R.string.dashboard_breakdown_workout_description,
         )
+    }
+}
+
+@Composable
+private fun BreakdownRow(
+    @DrawableRes iconRes: Int,
+    text: String,
+    @StringRes descriptionRes: Int,
+) {
+    val description = stringResource(descriptionRes, text)
+    Row(
+        modifier =
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = description
+            },
+        horizontalArrangement = Arrangement.spacedBy(BREAKDOWN_ICON_SPACING),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(BREAKDOWN_ICON_SIZE),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(text, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

@@ -17,6 +17,9 @@
     <string name="dashboard_activity_chart_achieved">目標達成</string>
     <string name="dashboard_button_previous_day">前日</string>
     <string name="dashboard_button_next_day">翌日</string>
+    <string name="dashboard_breakdown_steps_description">歩数 %1$s</string>
+    <string name="dashboard_breakdown_cycling_description">サイクリング距離 %1$s</string>
+    <string name="dashboard_breakdown_workout_description">セット数 %1$s</string>
     <string name="dashboard_section_weight">体重</string>
     <string name="dashboard_label_current_weight">現在値</string>
     <string name="dashboard_label_target_weight">目標値</string>
