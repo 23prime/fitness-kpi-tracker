@@ -4,6 +4,9 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.okkey.fitnesskpitracker.data.AppDatabase
 import com.okkey.fitnesskpitracker.data.MetricsRepository
+import com.okkey.fitnesskpitracker.data.WeightPoint
+import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
+import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.Dispatchers
@@ -67,6 +70,40 @@ class DashboardViewModelTest {
             assertNull(state.weightProgress)
             assertFalse(state.isWeightOverdue)
             assertEquals(daysUntilWeightDeadline(today), state.daysUntilDeadline)
+            assertEquals(emptyList(), state.weightHistory)
+        }
+
+    @Test
+    fun refresh_weightHistory_containsOnlyPointsWithinStartDateAndDeadline() =
+        runTest {
+            repository.saveManual(
+                WEIGHT_START_DATE.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 61.0,
+                workoutSets = null,
+            )
+            repository.saveManual(
+                WEIGHT_START_DATE,
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 60.0,
+                workoutSets = null,
+            )
+            repository.saveManual(
+                WEIGHT_DEADLINE.plusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 58.0,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(listOf(WeightPoint(WEIGHT_START_DATE, 60.0)), state.weightHistory)
         }
 
     @Test

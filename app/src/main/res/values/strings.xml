@@ -24,7 +24,6 @@
     <string name="dashboard_label_current_weight">現在値</string>
     <string name="dashboard_label_target_weight">目標値</string>
     <string name="dashboard_label_progress">進捗率</string>
-    <string name="dashboard_label_deadline">期限</string>
     <string name="dashboard_label_days_remaining">残り日数</string>
     <string name="dashboard_weight_no_record">記録なし</string>
     <string name="dashboard_weight_overdue">期限を過ぎていますが、まだ目標を達成していません</string>

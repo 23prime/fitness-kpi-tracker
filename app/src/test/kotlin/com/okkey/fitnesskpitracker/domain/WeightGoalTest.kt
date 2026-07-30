@@ -94,4 +94,81 @@ class WeightGoalTest {
 
         assertFalse(overdue)
     }
+
+    @Test
+    fun idealWeightAt_onStartDate_isBaseline() {
+        val weight =
+            idealWeightAt(
+                date = LocalDate.of(2026, 8, 1),
+                startDate = LocalDate.of(2026, 8, 1),
+                deadline = LocalDate.of(2026, 9, 30),
+                baselineKg = 60.0,
+                targetKg = 59.0,
+            )
+
+        assertEquals(60.0, weight)
+    }
+
+    @Test
+    fun idealWeightAt_onDeadline_isTarget() {
+        val weight =
+            idealWeightAt(
+                date = LocalDate.of(2026, 9, 30),
+                startDate = LocalDate.of(2026, 8, 1),
+                deadline = LocalDate.of(2026, 9, 30),
+                baselineKg = 60.0,
+                targetKg = 59.0,
+            )
+
+        assertEquals(59.0, weight)
+    }
+
+    @Test
+    fun idealWeightAt_atHalfway_isBetweenBaselineAndTarget() {
+        val weight =
+            idealWeightAt(
+                date = LocalDate.of(2026, 8, 11),
+                startDate = LocalDate.of(2026, 8, 1),
+                deadline = LocalDate.of(2026, 8, 21),
+                baselineKg = 60.0,
+                targetKg = 59.0,
+            )
+
+        assertEquals(59.5, weight)
+    }
+
+    @Test
+    fun idealWeightAt_beforeStartDate_isClampedToBaseline() {
+        val weight =
+            idealWeightAt(
+                date = LocalDate.of(2026, 7, 1),
+                startDate = LocalDate.of(2026, 8, 1),
+                deadline = LocalDate.of(2026, 9, 30),
+                baselineKg = 60.0,
+                targetKg = 59.0,
+            )
+
+        assertEquals(60.0, weight)
+    }
+
+    @Test
+    fun idealWeightAt_afterDeadline_isClampedToTarget() {
+        val weight =
+            idealWeightAt(
+                date = LocalDate.of(2026, 10, 15),
+                startDate = LocalDate.of(2026, 8, 1),
+                deadline = LocalDate.of(2026, 9, 30),
+                baselineKg = 60.0,
+                targetKg = 59.0,
+            )
+
+        assertEquals(59.0, weight)
+    }
+
+    @Test
+    fun idealWeightOnDate_usesStartDeadlineAndConstants() {
+        val weight = idealWeightOnDate(WEIGHT_START_DATE)
+
+        assertEquals(WEIGHT_BASELINE_KG, weight)
+    }
 }

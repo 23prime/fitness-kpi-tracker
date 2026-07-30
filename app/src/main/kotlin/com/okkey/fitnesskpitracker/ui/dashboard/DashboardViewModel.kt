@@ -3,6 +3,9 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.okkey.fitnesskpitracker.data.MetricsRepository
+import com.okkey.fitnesskpitracker.data.WeightPoint
+import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
+import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScore
 import com.okkey.fitnesskpitracker.domain.dailyScoreAchievement
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
@@ -27,6 +30,7 @@ data class DashboardUiState(
     val weightProgress: Double? = null,
     val daysUntilDeadline: Long = 0,
     val isWeightOverdue: Boolean = false,
+    val weightHistory: List<WeightPoint> = emptyList(),
 )
 
 class DashboardViewModel(
@@ -73,6 +77,7 @@ class DashboardViewModel(
             val earliestDate = repository.findEarliestDate() ?: date
             val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
             val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
+            val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, WEIGHT_DEADLINE)
             if (requestGeneration != generation) return@launch
 
             _uiState.value =
@@ -89,6 +94,7 @@ class DashboardViewModel(
                     weightProgress = weightProgress,
                     daysUntilDeadline = daysUntilWeightDeadline(todayDate),
                     isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
+                    weightHistory = weightHistory,
                 )
         }
     }
