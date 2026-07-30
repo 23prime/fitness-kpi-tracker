@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -89,24 +88,26 @@ private fun WeightLineChart(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             WeightChartYAxisLabels(minWeight = minWeight, maxWeight = maxWeight, labelColor = labelColor)
-            WeightChartCanvas(
-                weightHistory = weightHistory,
-                minWeight = minWeight,
-                maxWeight = maxWeight,
-                gridColor = labelColor,
-            )
-        }
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-                WEIGHT_START_DATE.format(DATE_DISPLAY_FORMATTER),
-                style = MaterialTheme.typography.labelSmall,
-                color = labelColor,
-            )
-            Text(
-                WEIGHT_DEADLINE.format(DATE_DISPLAY_FORMATTER),
-                style = MaterialTheme.typography.labelSmall,
-                color = labelColor,
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                WeightChartCanvas(
+                    weightHistory = weightHistory,
+                    minWeight = minWeight,
+                    maxWeight = maxWeight,
+                    gridColor = labelColor,
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        WEIGHT_START_DATE.format(DATE_DISPLAY_FORMATTER),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelColor,
+                    )
+                    Text(
+                        WEIGHT_DEADLINE.format(DATE_DISPLAY_FORMATTER),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = labelColor,
+                    )
+                }
+            }
         }
     }
 }
@@ -129,7 +130,7 @@ private fun WeightChartYAxisLabels(
 }
 
 @Composable
-private fun RowScope.WeightChartCanvas(
+private fun WeightChartCanvas(
     weightHistory: List<WeightPoint>,
     minWeight: Double,
     maxWeight: Double,
@@ -142,7 +143,7 @@ private fun RowScope.WeightChartCanvas(
     Canvas(
         modifier =
             Modifier
-                .weight(1f)
+                .fillMaxWidth()
                 .height(WEIGHT_CHART_HEIGHT),
     ) {
         fun xFor(date: LocalDate): Float {
