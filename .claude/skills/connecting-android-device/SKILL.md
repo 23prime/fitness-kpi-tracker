@@ -44,6 +44,7 @@ Run `android-connect` once, then ask. Do not sit in a retry loop — it already 
 - **mise's `.env` beats the caller's environment.** `ANDROID_SERIAL=other mise run android-connect` silently uses the `.env` value. To override, run the script directly: `ANDROID_SERIAL=other ./mise-tasks/android-connect`.
 - **Screenshots come out black.** `adb exec-out screencap -p` returns a blank image on this device. `android-screenshot` writes the file on the device and pulls it instead. Do not reach for `exec-out`.
 - **A black screenshot can also mean the screen is off or locked**, which is not an app bug. Check before concluding anything: `mise run android-status`.
+- **A stale screenshot looks identical to a real bug.** After every code change, run `mise run android-install` again immediately before the next screenshot — even if a build was already installed minutes earlier. Skipping this makes the old build's output look like the fix didn't apply, and the user has to point out "did this actually change?" before it's caught.
 
 - **The app targets SDK 36 on an API 37 device.** That is a deliberate decision recorded in ADR 0001, not drift to correct.
 - **Screenshot coordinates are not device coordinates.** `android-screenshot`'s image is displayed scaled down (e.g. a 1080x2400 device shows as 900x2000), so reading a tap target's position off the displayed image and passing it to `adb shell input tap X Y` misses — the multiplier needed to convert varies per image. Get exact coordinates instead:
