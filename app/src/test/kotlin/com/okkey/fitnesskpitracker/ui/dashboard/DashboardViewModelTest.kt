@@ -8,6 +8,7 @@ import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -55,7 +56,7 @@ class DashboardViewModelTest {
     @Test
     fun initialState_noData_activityScoreZeroAndWeightHasNoRecord() =
         runTest {
-            val viewModel = DashboardViewModel(repository, today)
+            val viewModel = DashboardViewModel(repository) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -74,7 +75,7 @@ class DashboardViewModelTest {
             repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = 10.0, weightKg = null, workoutSets = 10)
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository, today)
+            val viewModel = DashboardViewModel(repository) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -98,7 +99,7 @@ class DashboardViewModelTest {
             )
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository, today)
+            val viewModel = DashboardViewModel(repository) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -119,7 +120,7 @@ class DashboardViewModelTest {
             )
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository, afterDeadline)
+            val viewModel = DashboardViewModel(repository) { afterDeadline }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -129,7 +130,7 @@ class DashboardViewModelTest {
     @Test
     fun onReload_reflectsDataSavedAfterInitialLoad() =
         runTest {
-            val viewModel = DashboardViewModel(repository, today)
+            val viewModel = DashboardViewModel(repository) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
@@ -137,5 +138,179 @@ class DashboardViewModelTest {
             dispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(100.0, viewModel.uiState.value.activityScore)
+        }
+
+    @Test
+    fun onReload_reflectsSelectedDateNotToday() =
+        runTest {
+            val yesterday = today.minusDays(1)
+            repository.saveManual(
+                yesterday,
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            repository.saveManual(
+                yesterday,
+                steps = 5_000L,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            viewModel.onReload()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(yesterday, state.date)
+            assertEquals(100.0, state.activityScore)
+        }
+
+    @Test
+    fun onPreviousDay_movesActivitySelectionButKeepsWeightSectionOnToday() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(5),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(today.minusDays(1), state.date)
+            assertEquals(0.0, state.activityScore)
+            assertEquals(59.5, state.currentWeightKg)
+            assertEquals(daysUntilWeightDeadline(today), state.daysUntilDeadline)
+        }
+
+    @Test
+    fun onNextDay_movesSelectionForwardTowardToday() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+            assertEquals(today.minusDays(1), viewModel.uiState.value.date)
+
+            viewModel.onNextDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(today, viewModel.uiState.value.date)
+        }
+
+    @Test
+    fun onNextDay_atToday_doesNothing() =
+        runTest {
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onNextDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(today, state.date)
+            assertFalse(state.canGoToNextDay)
+        }
+
+    @Test
+    fun onPreviousDay_atEarliestRecordedDate_doesNothing() =
+        runTest {
+            val earliestDate = today.minusDays(1)
+            repository.saveManual(
+                earliestDate,
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(earliestDate, state.date)
+            assertFalse(state.canGoToPreviousDay)
+        }
+
+    @Test
+    fun onPreviousDay_noRecordedData_disablesPreviousDayImmediately() =
+        runTest {
+            val viewModel = DashboardViewModel(repository) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.canGoToPreviousDay)
+        }
+
+    @Test
+    fun onReload_reEvaluatesTodayOnEachRefreshSoUpperBoundTracksDateRollover() =
+        runTest {
+            var mutableToday = today
+            val viewModel = DashboardViewModel(repository) { mutableToday }
+            dispatcher.scheduler.advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.canGoToNextDay)
+
+            mutableToday = today.plusDays(1)
+            viewModel.onReload()
+            dispatcher.scheduler.advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.canGoToNextDay)
+
+            viewModel.onNextDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals(mutableToday, state.date)
+            assertFalse(state.canGoToNextDay)
+        }
+
+    @Test
+    fun onNextDay_calledAgainBeforePriorRefreshCompletes_isRejectedNotDoubleAdvanced() =
+        runTest {
+            val controlledDispatcher = StandardTestDispatcher(testScheduler)
+            Dispatchers.setMain(controlledDispatcher)
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            val viewModel = DashboardViewModel(repository) { today }
+            controlledDispatcher.scheduler.advanceUntilIdle()
+            viewModel.onPreviousDay()
+            controlledDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(today.minusDays(1), viewModel.uiState.value.date)
+
+            viewModel.onNextDay()
+            viewModel.onNextDay()
+            controlledDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(today, viewModel.uiState.value.date)
         }
 }

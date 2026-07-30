@@ -34,6 +34,8 @@ class MetricsRepository(
         return entity?.weightKgManual ?: entity?.weightKgHealthConnect
     }
 
+    suspend fun findEarliestDate(): LocalDate? = dao.findEarliestDate()
+
     suspend fun saveManual(
         date: LocalDate,
         steps: Long?,

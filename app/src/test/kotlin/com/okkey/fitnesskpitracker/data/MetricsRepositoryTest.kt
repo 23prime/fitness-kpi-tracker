@@ -100,4 +100,30 @@ class MetricsRepositoryTest {
 
             assertEquals(59.5, result)
         }
+
+    @Test
+    fun findEarliestDate_noRecord_returnsNull() =
+        runTest {
+            val result = repository.findEarliestDate()
+
+            assertNull(result)
+        }
+
+    @Test
+    fun findEarliestDate_returnsOldestRecordedDate() =
+        runTest {
+            val oldest = LocalDate.of(2026, 7, 1)
+            repository.saveManual(oldest, steps = null, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            repository.saveManual(
+                LocalDate.of(2026, 7, 15),
+                steps = 4_000L,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+
+            val result = repository.findEarliestDate()
+
+            assertEquals(oldest, result)
+        }
 }
