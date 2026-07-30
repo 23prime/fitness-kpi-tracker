@@ -2,6 +2,15 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +61,7 @@ private val DONUT_STROKE_WIDTH = 16.dp
 private val SWIPE_THRESHOLD = 96.dp
 private val BREAKDOWN_ICON_SIZE = 20.dp
 private val BREAKDOWN_ICON_SPACING = 8.dp
+private const val DATE_SWITCH_ANIMATION_DURATION_MS = 300
 
 @Composable
 internal fun ActivityScoreSection(
@@ -93,23 +103,72 @@ internal fun ActivityScoreSection(
             onPreviousDay = onPreviousDay,
             onNextDay = onNextDay,
         )
+        ActivityScoreContent(uiState = uiState)
+    }
+}
+
+@Composable
+private fun ActivityScoreContent(uiState: DashboardUiState) {
+    AnimatedContent(
+        targetState = ActivityScoreSnapshot(uiState),
+        transitionSpec = {
+            if (initialState.date == targetState.date) {
+                EnterTransition.None togetherWith ExitTransition.None
+            } else {
+                val direction = if (targetState.date.isAfter(initialState.date)) 1 else -1
+                (
+                    slideInHorizontally(animationSpec = tween(DATE_SWITCH_ANIMATION_DURATION_MS)) { fullWidth ->
+                        direction * fullWidth
+                    } + fadeIn(animationSpec = tween(DATE_SWITCH_ANIMATION_DURATION_MS))
+                ).togetherWith(
+                    slideOutHorizontally(animationSpec = tween(DATE_SWITCH_ANIMATION_DURATION_MS)) { fullWidth ->
+                        -direction * fullWidth
+                    } + fadeOut(animationSpec = tween(DATE_SWITCH_ANIMATION_DURATION_MS)),
+                )
+            }
+        },
+    ) { snapshot ->
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ActivityScoreDonutChart(
-                date = uiState.date,
-                score = uiState.activityScore,
-                achievement = uiState.activityAchievement,
+                date = snapshot.date,
+                score = snapshot.activityScore,
+                achievement = snapshot.activityAchievement,
             )
             ActivityScoreBreakdown(
-                steps = uiState.steps,
-                cyclingDistanceKm = uiState.cyclingDistanceKm,
-                workoutSets = uiState.workoutSets,
+                steps = snapshot.steps,
+                cyclingDistanceKm = snapshot.cyclingDistanceKm,
+                workoutSets = snapshot.workoutSets,
             )
         }
     }
+}
+
+/**
+ * Snapshot of the fields ActivityScoreContent renders, passed to AnimatedContent as its
+ * targetState. Capturing them as one value (rather than reading DashboardUiState directly inside
+ * the content lambda) keeps the outgoing slide frozen at the values it started exiting with,
+ * instead of jumping to the incoming day's values as soon as the ViewModel updates.
+ */
+private data class ActivityScoreSnapshot(
+    val date: LocalDate,
+    val activityScore: Double,
+    val activityAchievement: Double,
+    val steps: Long?,
+    val cyclingDistanceKm: Double?,
+    val workoutSets: Int?,
+) {
+    constructor(uiState: DashboardUiState) : this(
+        date = uiState.date,
+        activityScore = uiState.activityScore,
+        activityAchievement = uiState.activityAchievement,
+        steps = uiState.steps,
+        cyclingDistanceKm = uiState.cyclingDistanceKm,
+        workoutSets = uiState.workoutSets,
+    )
 }
 
 @Composable
