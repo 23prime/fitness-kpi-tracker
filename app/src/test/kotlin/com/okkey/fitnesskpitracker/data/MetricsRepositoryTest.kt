@@ -126,4 +126,104 @@ class MetricsRepositoryTest {
 
             assertEquals(oldest, result)
         }
+
+    @Test
+    fun findWeightRange_noRecords_returnsEmptyList() =
+        runTest {
+            val result = repository.findWeightRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30))
+
+            assertEquals(emptyList(), result)
+        }
+
+    @Test
+    fun findWeightRange_skipsDaysWithoutWeight() =
+        runTest {
+            repository.saveManual(
+                LocalDate.of(2026, 8, 1),
+                steps = 4_000L,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            repository.saveManual(
+                LocalDate.of(2026, 8, 2),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 59.8,
+                workoutSets = null,
+            )
+
+            val result = repository.findWeightRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30))
+
+            assertEquals(listOf(WeightPoint(LocalDate.of(2026, 8, 2), 59.8)), result)
+        }
+
+    @Test
+    fun findWeightRange_manualOverridesHealthConnect() =
+        runTest {
+            val date = LocalDate.of(2026, 8, 5)
+            database.dailyMetricsDao().upsertHealthConnect(
+                date,
+                stepsHealthConnect = null,
+                cyclingDistanceKmHealthConnect = null,
+                weightKgHealthConnect = 60.0,
+            )
+            repository.saveManual(date, steps = null, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
+
+            val result = repository.findWeightRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30))
+
+            assertEquals(listOf(WeightPoint(date, 59.5)), result)
+        }
+
+    @Test
+    fun findWeightRange_excludesRecordsOutsideRange() =
+        runTest {
+            repository.saveManual(
+                LocalDate.of(2026, 7, 31),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 60.5,
+                workoutSets = null,
+            )
+            repository.saveManual(
+                LocalDate.of(2026, 10, 1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 58.0,
+                workoutSets = null,
+            )
+
+            val result = repository.findWeightRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30))
+
+            assertEquals(emptyList(), result)
+        }
+
+    @Test
+    fun findWeightRange_returnsPointsOrderedByDate() =
+        runTest {
+            repository.saveManual(
+                LocalDate.of(2026, 8, 10),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 59.9,
+                workoutSets = null,
+            )
+            repository.saveManual(
+                LocalDate.of(2026, 8, 5),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = 60.0,
+                workoutSets = null,
+            )
+
+            val result = repository.findWeightRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 9, 30))
+
+            assertEquals(
+                listOf(
+                    WeightPoint(LocalDate.of(2026, 8, 5), 60.0),
+                    WeightPoint(LocalDate.of(2026, 8, 10), 59.9),
+                ),
+                result,
+            )
+        }
 }

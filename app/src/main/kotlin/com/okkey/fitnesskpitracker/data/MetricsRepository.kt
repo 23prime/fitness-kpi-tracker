@@ -1,5 +1,6 @@
 package com.okkey.fitnesskpitracker.data
 
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
 enum class ManualField {
@@ -14,6 +15,11 @@ data class DailyMetricsValues(
     val cyclingDistanceKm: Double?,
     val weightKg: Double?,
     val workoutSets: Int?,
+)
+
+data class WeightPoint(
+    val date: LocalDate,
+    val weightKg: Double,
 )
 
 class MetricsRepository(
@@ -35,6 +41,15 @@ class MetricsRepository(
     }
 
     suspend fun findEarliestDate(): LocalDate? = dao.findEarliestDate()
+
+    suspend fun findWeightRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<WeightPoint> =
+        dao.observeByDateRange(startDate, endDate).first().mapNotNull { entity ->
+            val weightKg = entity.weightKgManual ?: entity.weightKgHealthConnect
+            weightKg?.let { WeightPoint(entity.date, it) }
+        }
 
     suspend fun saveManual(
         date: LocalDate,

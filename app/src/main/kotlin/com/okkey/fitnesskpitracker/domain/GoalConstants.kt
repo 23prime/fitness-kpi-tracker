@@ -9,4 +9,5 @@ const val DAILY_SCORE_TARGET = 150.0
 
 const val WEIGHT_TARGET_KG = 59.0
 const val WEIGHT_BASELINE_KG = 60.0
+val WEIGHT_START_DATE: LocalDate = LocalDate.parse("2026-07-25")
 val WEIGHT_DEADLINE: LocalDate = LocalDate.parse("2026-09-30")
