@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -38,6 +40,10 @@ private val WEIGHT_CHART_IDEAL_DASH_OFF = 6.dp
 private const val WEIGHT_CHART_IDEAL_ALPHA = 0.5f
 private val WEIGHT_CHART_POINT_RADIUS = 4.dp
 private const val WEIGHT_CHART_Y_MARGIN_KG = 0.3
+private const val WEIGHT_CHART_GRID_DIVISIONS = 4
+private val WEIGHT_CHART_GRID_STROKE_WIDTH = 1.dp
+private const val WEIGHT_CHART_GRID_ALPHA = 0.3f
+private const val WEIGHT_CHART_AXIS_ALPHA = 0.6f
 
 @Composable
 internal fun WeightGoalSection(uiState: DashboardUiState) {
@@ -53,7 +59,6 @@ internal fun WeightGoalSection(uiState: DashboardUiState) {
                 stringResource(R.string.dashboard_label_progress),
                 formatPercent(uiState.weightProgress ?: 0.0),
             )
-            WeightLineChart(uiState.weightHistory)
             if (uiState.isWeightOverdue) {
                 Text(
                     stringResource(R.string.dashboard_weight_overdue),
@@ -61,27 +66,75 @@ internal fun WeightGoalSection(uiState: DashboardUiState) {
                 )
             }
         }
-        LabeledValueRow(
-            stringResource(R.string.dashboard_label_deadline),
-            WEIGHT_DEADLINE.format(DATE_DISPLAY_FORMATTER),
-        )
+        WeightLineChart(uiState.weightHistory)
         LabeledValueRow(stringResource(R.string.dashboard_label_days_remaining), uiState.daysUntilDeadline.toString())
     }
 }
 
 @Composable
 private fun WeightLineChart(weightHistory: List<WeightPoint>) {
-    val idealColor = Color(COLOR_IDEAL_LINE)
-    val actualColor = MaterialTheme.colorScheme.primary
+    val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val weights = weightHistory.map { it.weightKg } + listOf(WEIGHT_BASELINE_KG, WEIGHT_TARGET_KG)
     val minWeight = weights.min() - WEIGHT_CHART_Y_MARGIN_KG
     val maxWeight = weights.max() + WEIGHT_CHART_Y_MARGIN_KG
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            WeightChartYAxisLabels(minWeight = minWeight, maxWeight = maxWeight, labelColor = labelColor)
+            WeightChartCanvas(
+                weightHistory = weightHistory,
+                minWeight = minWeight,
+                maxWeight = maxWeight,
+                gridColor = labelColor,
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                WEIGHT_START_DATE.format(DATE_DISPLAY_FORMATTER),
+                style = MaterialTheme.typography.labelSmall,
+                color = labelColor,
+            )
+            Text(
+                WEIGHT_DEADLINE.format(DATE_DISPLAY_FORMATTER),
+                style = MaterialTheme.typography.labelSmall,
+                color = labelColor,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeightChartYAxisLabels(
+    minWeight: Double,
+    maxWeight: Double,
+    labelColor: Color,
+) {
+    Column(
+        modifier = Modifier.height(WEIGHT_CHART_HEIGHT),
+        verticalArrangement = Arrangement.SpaceBetween,
+    ) {
+        for (division in 0..WEIGHT_CHART_GRID_DIVISIONS) {
+            val weight = maxWeight - (maxWeight - minWeight) * division / WEIGHT_CHART_GRID_DIVISIONS
+            Text(formatWeight(weight), style = MaterialTheme.typography.labelSmall, color = labelColor)
+        }
+    }
+}
+
+@Composable
+private fun RowScope.WeightChartCanvas(
+    weightHistory: List<WeightPoint>,
+    minWeight: Double,
+    maxWeight: Double,
+    gridColor: Color,
+) {
+    val idealColor = Color(COLOR_IDEAL_LINE)
+    val actualColor = MaterialTheme.colorScheme.primary
     val totalDays = ChronoUnit.DAYS.between(WEIGHT_START_DATE, WEIGHT_DEADLINE).coerceAtLeast(1)
 
     Canvas(
         modifier =
             Modifier
-                .fillMaxWidth()
+                .weight(1f)
                 .height(WEIGHT_CHART_HEIGHT),
     ) {
         fun xFor(date: LocalDate): Float {
@@ -93,6 +146,8 @@ private fun WeightLineChart(weightHistory: List<WeightPoint>) {
             val fraction = (weightKg - minWeight) / (maxWeight - minWeight)
             return size.height * (1f - fraction.toFloat())
         }
+
+        drawWeightChartXAxis(gridColor)
 
         drawLine(
             color = idealColor,
@@ -127,6 +182,33 @@ private fun WeightLineChart(weightHistory: List<WeightPoint>) {
             }
         }
     }
+}
+
+private fun DrawScope.drawWeightChartXAxis(gridColor: Color) {
+    for (division in 1 until WEIGHT_CHART_GRID_DIVISIONS) {
+        val y = size.height * division / WEIGHT_CHART_GRID_DIVISIONS
+        drawLine(
+            color = gridColor,
+            start = Offset(0f, y),
+            end = Offset(size.width, y),
+            strokeWidth = WEIGHT_CHART_GRID_STROKE_WIDTH.toPx(),
+            alpha = WEIGHT_CHART_GRID_ALPHA,
+        )
+    }
+    drawLine(
+        color = gridColor,
+        start = Offset(0f, 0f),
+        end = Offset(size.width, 0f),
+        strokeWidth = WEIGHT_CHART_GRID_STROKE_WIDTH.toPx(),
+        alpha = WEIGHT_CHART_AXIS_ALPHA,
+    )
+    drawLine(
+        color = gridColor,
+        start = Offset(0f, size.height),
+        end = Offset(size.width, size.height),
+        strokeWidth = WEIGHT_CHART_GRID_STROKE_WIDTH.toPx(),
+        alpha = WEIGHT_CHART_AXIS_ALPHA,
+    )
 }
 
 @Composable
