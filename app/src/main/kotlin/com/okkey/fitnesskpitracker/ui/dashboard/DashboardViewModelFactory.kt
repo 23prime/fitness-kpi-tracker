@@ -10,7 +10,7 @@ class DashboardViewModelFactory(
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val viewModel = DashboardViewModel(repository, today = LocalDate.now())
+        val viewModel = DashboardViewModel(repository, today = LocalDate::now)
         return viewModel as T
     }
 }

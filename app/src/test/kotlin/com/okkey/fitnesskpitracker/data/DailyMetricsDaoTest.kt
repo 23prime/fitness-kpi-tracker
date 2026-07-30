@@ -225,6 +225,32 @@ class DailyMetricsDaoTest {
             assertNull(result)
         }
 
+    @Test
+    fun findEarliestDate_noRows_returnsNull() =
+        runTest {
+            val result = dao.findEarliestDate()
+
+            assertNull(result)
+        }
+
+    @Test
+    fun findEarliestDate_returnsOldestDateRegardlessOfWhichColumnsAreSet() =
+        runTest {
+            val oldest = LocalDate.of(2026, 7, 1)
+            upsertStepsOnly(LocalDate.of(2026, 7, 20), steps = 4_000L)
+            dao.upsertManual(
+                oldest,
+                stepsManual = null,
+                cyclingDistanceKmManual = null,
+                weightKgManual = 60.0,
+                workoutSets = null,
+            )
+
+            val result = dao.findEarliestDate()
+
+            assertEquals(oldest, result)
+        }
+
     private suspend fun upsertStepsOnly(
         date: LocalDate,
         steps: Long,
