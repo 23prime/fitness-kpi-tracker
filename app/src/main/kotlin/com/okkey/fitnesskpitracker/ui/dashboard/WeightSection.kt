@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +45,7 @@ private const val WEIGHT_CHART_GRID_DIVISIONS = 4
 private val WEIGHT_CHART_GRID_STROKE_WIDTH = 1.dp
 private const val WEIGHT_CHART_GRID_ALPHA = 0.3f
 private const val WEIGHT_CHART_AXIS_ALPHA = 0.6f
+private val WEIGHT_CHART_VERTICAL_MARGIN = 8.dp
 
 @Composable
 internal fun WeightGoalSection(uiState: DashboardUiState) {
@@ -66,19 +68,25 @@ internal fun WeightGoalSection(uiState: DashboardUiState) {
                 )
             }
         }
-        WeightLineChart(uiState.weightHistory)
         LabeledValueRow(stringResource(R.string.dashboard_label_days_remaining), uiState.daysUntilDeadline.toString())
+        WeightLineChart(
+            weightHistory = uiState.weightHistory,
+            modifier = Modifier.padding(vertical = WEIGHT_CHART_VERTICAL_MARGIN),
+        )
     }
 }
 
 @Composable
-private fun WeightLineChart(weightHistory: List<WeightPoint>) {
+private fun WeightLineChart(
+    weightHistory: List<WeightPoint>,
+    modifier: Modifier = Modifier,
+) {
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
     val weights = weightHistory.map { it.weightKg } + listOf(WEIGHT_BASELINE_KG, WEIGHT_TARGET_KG)
     val minWeight = weights.min() - WEIGHT_CHART_Y_MARGIN_KG
     val maxWeight = weights.max() + WEIGHT_CHART_Y_MARGIN_KG
 
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             WeightChartYAxisLabels(minWeight = minWeight, maxWeight = maxWeight, labelColor = labelColor)
             WeightChartCanvas(
