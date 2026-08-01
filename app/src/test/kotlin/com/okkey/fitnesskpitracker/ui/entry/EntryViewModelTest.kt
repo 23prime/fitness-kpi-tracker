@@ -200,6 +200,65 @@ class EntryViewModelTest {
         }
 
     @Test
+    fun onDateSelected_showsManualValuesOnlyAndExposesHealthConnectValuesSeparately() =
+        runTest {
+            val otherDate = LocalDate.of(2026, 7, 20)
+            database.dailyMetricsDao().upsertHealthConnect(
+                otherDate,
+                stepsHealthConnect = 8_000L,
+                cyclingDistanceKmHealthConnect = 12.0,
+                weightKgHealthConnect = 70.0,
+            )
+            repository.saveManual(
+                otherDate,
+                steps = 4_000L,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onDateSelected(otherDate)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertEquals("4000", state.stepsInput)
+            assertEquals("", state.cyclingDistanceInput)
+            assertEquals("", state.weightInput)
+            assertEquals(8_000L, state.stepsHealthConnect)
+            assertEquals(12.0, state.cyclingDistanceKmHealthConnect)
+            assertEquals(70.0, state.weightKgHealthConnect)
+        }
+
+    @Test
+    fun onSave_uneditedFieldWithHealthConnectValue_isNotPersistedAsManual() =
+        runTest {
+            database.dailyMetricsDao().upsertHealthConnect(
+                today,
+                stepsHealthConnect = 8_000L,
+                cyclingDistanceKmHealthConnect = 12.0,
+                weightKgHealthConnect = 70.0,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onDateSelected(today)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onFieldChanged(ManualField.WORKOUT_SETS, "10")
+            viewModel.onSave()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val entity = database.dailyMetricsDao().findByDate(today)
+            assertNull(entity?.stepsManual)
+            assertNull(entity?.cyclingDistanceKmManual)
+            assertNull(entity?.weightKgManual)
+            assertEquals(10, entity?.workoutSets)
+            val effective = repository.findEffectiveByDate(today)
+            assertEquals(8_000L, effective.steps)
+            assertEquals(12.0, effective.cyclingDistanceKm)
+            assertEquals(70.0, effective.weightKg)
+        }
+
+    @Test
     fun onClearField_thenSave_persistsClearedFieldAsNull() =
         runTest {
             viewModel.onFieldChanged(ManualField.STEPS, "4000")

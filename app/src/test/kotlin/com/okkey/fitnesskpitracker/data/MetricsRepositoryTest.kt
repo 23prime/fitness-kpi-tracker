@@ -77,6 +77,45 @@ class MetricsRepositoryTest {
         }
 
     @Test
+    fun findSplitByDate_noRecord_returnsAllNullForBoth() =
+        runTest {
+            val (manual, healthConnect) = repository.findSplitByDate(LocalDate.of(2026, 7, 28))
+
+            assertNull(manual.steps)
+            assertNull(manual.cyclingDistanceKm)
+            assertNull(manual.weightKg)
+            assertNull(manual.workoutSets)
+            assertNull(healthConnect.steps)
+            assertNull(healthConnect.cyclingDistanceKm)
+            assertNull(healthConnect.weightKg)
+            assertNull(healthConnect.workoutSets)
+        }
+
+    @Test
+    fun findSplitByDate_keepsManualAndHealthConnectSeparate() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            database.dailyMetricsDao().upsertHealthConnect(
+                date,
+                stepsHealthConnect = 8_000L,
+                cyclingDistanceKmHealthConnect = 10.0,
+                weightKgHealthConnect = 60.0,
+            )
+            repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = 21)
+
+            val (manual, healthConnect) = repository.findSplitByDate(date)
+
+            assertEquals(4_000L, manual.steps)
+            assertNull(manual.cyclingDistanceKm)
+            assertNull(manual.weightKg)
+            assertEquals(21, manual.workoutSets)
+            assertEquals(8_000L, healthConnect.steps)
+            assertEquals(10.0, healthConnect.cyclingDistanceKm)
+            assertEquals(60.0, healthConnect.weightKg)
+            assertNull(healthConnect.workoutSets)
+        }
+
+    @Test
     fun findLatestWeightKgOnOrBefore_noRecord_returnsNull() =
         runTest {
             val result = repository.findLatestWeightKgOnOrBefore(LocalDate.of(2026, 7, 28))

@@ -26,13 +26,32 @@ class MetricsRepository(
     private val dao: DailyMetricsDao,
 ) {
     suspend fun findEffectiveByDate(date: LocalDate): DailyMetricsValues {
-        val entity = dao.findByDate(date)
+        val (manual, healthConnect) = findSplitByDate(date)
         return DailyMetricsValues(
-            steps = entity?.stepsManual ?: entity?.stepsHealthConnect,
-            cyclingDistanceKm = entity?.cyclingDistanceKmManual ?: entity?.cyclingDistanceKmHealthConnect,
-            weightKg = entity?.weightKgManual ?: entity?.weightKgHealthConnect,
-            workoutSets = entity?.workoutSets,
+            steps = manual.steps ?: healthConnect.steps,
+            cyclingDistanceKm = manual.cyclingDistanceKm ?: healthConnect.cyclingDistanceKm,
+            weightKg = manual.weightKg ?: healthConnect.weightKg,
+            workoutSets = manual.workoutSets,
         )
+    }
+
+    suspend fun findSplitByDate(date: LocalDate): Pair<DailyMetricsValues, DailyMetricsValues> {
+        val entity = dao.findByDate(date)
+        val manual =
+            DailyMetricsValues(
+                steps = entity?.stepsManual,
+                cyclingDistanceKm = entity?.cyclingDistanceKmManual,
+                weightKg = entity?.weightKgManual,
+                workoutSets = entity?.workoutSets,
+            )
+        val healthConnect =
+            DailyMetricsValues(
+                steps = entity?.stepsHealthConnect,
+                cyclingDistanceKm = entity?.cyclingDistanceKmHealthConnect,
+                weightKg = entity?.weightKgHealthConnect,
+                workoutSets = null,
+            )
+        return manual to healthConnect
     }
 
     suspend fun findLatestWeightKgOnOrBefore(date: LocalDate): Double? {
