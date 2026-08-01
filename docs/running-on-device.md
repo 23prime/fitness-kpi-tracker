@@ -80,6 +80,16 @@ adb shell am start -n com.okkey.fitnesskpitracker/.ui.MainActivity
 
 APK だけ作る場合は `./gradlew assembleDebug` で、出力先は `app/build/outputs/apk/debug/app-debug.apk`。アンインストールは `./gradlew uninstallDebug` で行う。
 
+## Health Connect の権限を許可する
+
+ダッシュボードのバナーから「許可する」を押すと権限ダイアログが出る。ダイアログを 2 回拒否すると、以降アプリからリクエストしてもダイアログが表示されなくなる。この状態になった場合は、端末の Health Connect 設定から直接許可する。
+
+1. 端末の設定アプリで「Health Connect」を検索する（機種・Android バージョンによりメニュー階層が異なるため）。見つからない場合は Health Connect アプリを直接開く。
+2. 「アプリの権限」から「Fitness KPI Tracker」を選ぶ。
+3. 歩数・距離・エクササイズ・体重を読み取り専用で許可する。
+
+アプリに戻ると、再起動しなくてもバナーが消える。
+
 ## スクリーンショットを撮る
 
 ```bash
