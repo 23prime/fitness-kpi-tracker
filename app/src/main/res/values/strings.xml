@@ -6,10 +6,11 @@
     <string name="entry_label_weight">体重 (kg)</string>
     <string name="entry_label_workout_sets">セット数</string>
     <string name="entry_button_save">保存</string>
-    <string name="entry_button_clear">取り消し</string>
+    <string name="entry_button_clear">手入力を消去</string>
     <string name="entry_button_select_date">日付を選択</string>
     <string name="entry_save_success">保存しました</string>
     <string name="entry_button_reload">再読み込み</string>
+    <string name="entry_health_connect_value">Health Connect: %1$s</string>
 
     <string name="dashboard_title">ダッシュボード</string>
     <string name="dashboard_section_activity">アクティビティスコア</string>

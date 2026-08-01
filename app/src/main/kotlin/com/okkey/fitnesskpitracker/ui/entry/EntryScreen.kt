@@ -169,51 +169,87 @@ private fun EntryFields(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         EntryField(
-            label = stringResource(R.string.entry_label_steps),
-            value = uiState.stepsInput,
-            error = uiState.stepsError,
+            state =
+                EntryFieldState(
+                    label = stringResource(R.string.entry_label_steps),
+                    value = uiState.stepsInput,
+                    error = uiState.stepsError,
+                    healthConnectValue = uiState.stepsHealthConnect?.toString(),
+                ),
             onValueChange = { onFieldChanged(ManualField.STEPS, it) },
             onClear = { onClearField(ManualField.STEPS) },
         )
         EntryField(
-            label = stringResource(R.string.entry_label_cycling_distance),
-            value = uiState.cyclingDistanceInput,
-            error = uiState.cyclingDistanceError,
+            state =
+                EntryFieldState(
+                    label = stringResource(R.string.entry_label_cycling_distance),
+                    value = uiState.cyclingDistanceInput,
+                    error = uiState.cyclingDistanceError,
+                    healthConnectValue = uiState.cyclingDistanceKmHealthConnect?.toString(),
+                ),
             onValueChange = { onFieldChanged(ManualField.CYCLING_DISTANCE, it) },
             onClear = { onClearField(ManualField.CYCLING_DISTANCE) },
         )
         EntryField(
-            label = stringResource(R.string.entry_label_weight),
-            value = uiState.weightInput,
-            error = uiState.weightError,
+            state =
+                EntryFieldState(
+                    label = stringResource(R.string.entry_label_weight),
+                    value = uiState.weightInput,
+                    error = uiState.weightError,
+                    healthConnectValue = uiState.weightKgHealthConnect?.toString(),
+                ),
             onValueChange = { onFieldChanged(ManualField.WEIGHT, it) },
             onClear = { onClearField(ManualField.WEIGHT) },
         )
         EntryField(
-            label = stringResource(R.string.entry_label_workout_sets),
-            value = uiState.workoutSetsInput,
-            error = uiState.workoutSetsError,
+            state =
+                EntryFieldState(
+                    label = stringResource(R.string.entry_label_workout_sets),
+                    value = uiState.workoutSetsInput,
+                    error = uiState.workoutSetsError,
+                    healthConnectValue = null,
+                ),
             onValueChange = { onFieldChanged(ManualField.WORKOUT_SETS, it) },
             onClear = { onClearField(ManualField.WORKOUT_SETS) },
         )
     }
 }
 
+private data class EntryFieldState(
+    val label: String,
+    val value: String,
+    val error: String?,
+    val healthConnectValue: String?,
+)
+
 @Composable
 private fun EntryField(
-    label: String,
-    value: String,
-    error: String?,
+    state: EntryFieldState,
     onValueChange: (String) -> Unit,
     onClear: () -> Unit,
 ) {
+    val healthConnectHint =
+        state.healthConnectValue?.let { stringResource(R.string.entry_health_connect_value, it) }
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedTextField(
-            value = value,
+            value = state.value,
             onValueChange = onValueChange,
-            label = { Text(label) },
-            isError = error != null,
-            supportingText = error?.let { { Text(it) } },
+            label = { Text(state.label) },
+            isError = state.error != null,
+            supportingText =
+                when {
+                    state.error != null -> {
+                        { Text(state.error) }
+                    }
+
+                    healthConnectHint != null -> {
+                        { Text(healthConnectHint) }
+                    }
+
+                    else -> {
+                        null
+                    }
+                },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(unfocusedLabelColor = Color(COLOR_UNFOCUSED_LABEL)),

@@ -26,6 +26,9 @@ data class EntryUiState(
     val cyclingDistanceError: String? = null,
     val weightError: String? = null,
     val workoutSetsError: String? = null,
+    val stepsHealthConnect: Long? = null,
+    val cyclingDistanceKmHealthConnect: Double? = null,
+    val weightKgHealthConnect: Double? = null,
     val isLoading: Boolean = false,
 ) {
     val isSaveEnabled: Boolean
@@ -133,15 +136,18 @@ class EntryViewModel(
         date: LocalDate,
         requestGeneration: Int,
     ) {
-        val values = repository.findEffectiveByDate(date)
+        val (manual, healthConnect) = repository.findSplitByDate(date)
         if (requestGeneration != generation) return
         _uiState.value =
             EntryUiState(
                 date = date,
-                stepsInput = values.steps?.toString() ?: "",
-                cyclingDistanceInput = values.cyclingDistanceKm?.toString() ?: "",
-                weightInput = values.weightKg?.toString() ?: "",
-                workoutSetsInput = values.workoutSets?.toString() ?: "",
+                stepsInput = manual.steps?.toString() ?: "",
+                cyclingDistanceInput = manual.cyclingDistanceKm?.toString() ?: "",
+                weightInput = manual.weightKg?.toString() ?: "",
+                workoutSetsInput = manual.workoutSets?.toString() ?: "",
+                stepsHealthConnect = healthConnect.steps,
+                cyclingDistanceKmHealthConnect = healthConnect.cyclingDistanceKm,
+                weightKgHealthConnect = healthConnect.weightKg,
                 isLoading = false,
             )
     }
