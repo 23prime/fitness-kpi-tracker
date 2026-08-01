@@ -3,6 +3,9 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.okkey.fitnesskpitracker.data.AppDatabase
+import com.okkey.fitnesskpitracker.data.FakeHealthConnectGateway
+import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
+import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
@@ -11,6 +14,8 @@ import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -35,6 +40,7 @@ class DashboardViewModelTest {
     private lateinit var repository: MetricsRepository
     private val today = LocalDate.of(2026, 7, 28)
     private val dispatcher = UnconfinedTestDispatcher()
+    private val gateway = FakeHealthConnectGateway()
 
     @Before
     fun setUp() {
@@ -59,7 +65,7 @@ class DashboardViewModelTest {
     @Test
     fun initialState_noData_activityScoreZeroAndWeightHasNoRecord() =
         runTest {
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -99,7 +105,7 @@ class DashboardViewModelTest {
             )
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -112,7 +118,7 @@ class DashboardViewModelTest {
             repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = 10.0, weightKg = null, workoutSets = 10)
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -136,7 +142,7 @@ class DashboardViewModelTest {
             )
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -157,7 +163,7 @@ class DashboardViewModelTest {
             )
             dispatcher.scheduler.advanceUntilIdle()
 
-            val viewModel = DashboardViewModel(repository) { afterDeadline }
+            val viewModel = DashboardViewModel(repository, gateway) { afterDeadline }
             dispatcher.scheduler.advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -167,7 +173,7 @@ class DashboardViewModelTest {
     @Test
     fun onReload_reflectsDataSavedAfterInitialLoad() =
         runTest {
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
@@ -189,7 +195,7 @@ class DashboardViewModelTest {
                 workoutSets = null,
             )
             dispatcher.scheduler.advanceUntilIdle()
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
             viewModel.onPreviousDay()
             dispatcher.scheduler.advanceUntilIdle()
@@ -221,7 +227,7 @@ class DashboardViewModelTest {
             )
             repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
             dispatcher.scheduler.advanceUntilIdle()
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onPreviousDay()
@@ -245,7 +251,7 @@ class DashboardViewModelTest {
                 workoutSets = null,
             )
             dispatcher.scheduler.advanceUntilIdle()
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
             viewModel.onPreviousDay()
             dispatcher.scheduler.advanceUntilIdle()
@@ -260,7 +266,7 @@ class DashboardViewModelTest {
     @Test
     fun onNextDay_atToday_doesNothing() =
         runTest {
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             viewModel.onNextDay()
@@ -283,7 +289,7 @@ class DashboardViewModelTest {
                 workoutSets = null,
             )
             dispatcher.scheduler.advanceUntilIdle()
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
             viewModel.onPreviousDay()
             dispatcher.scheduler.advanceUntilIdle()
@@ -299,7 +305,7 @@ class DashboardViewModelTest {
     @Test
     fun onPreviousDay_noRecordedData_disablesPreviousDayImmediately() =
         runTest {
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             dispatcher.scheduler.advanceUntilIdle()
 
             assertFalse(viewModel.uiState.value.canGoToPreviousDay)
@@ -309,7 +315,7 @@ class DashboardViewModelTest {
     fun onReload_reEvaluatesTodayOnEachRefreshSoUpperBoundTracksDateRollover() =
         runTest {
             var mutableToday = today
-            val viewModel = DashboardViewModel(repository) { mutableToday }
+            val viewModel = DashboardViewModel(repository, gateway) { mutableToday }
             dispatcher.scheduler.advanceUntilIdle()
             assertFalse(viewModel.uiState.value.canGoToNextDay)
 
@@ -338,7 +344,7 @@ class DashboardViewModelTest {
                 weightKg = null,
                 workoutSets = null,
             )
-            val viewModel = DashboardViewModel(repository) { today }
+            val viewModel = DashboardViewModel(repository, gateway) { today }
             controlledDispatcher.scheduler.advanceUntilIdle()
             viewModel.onPreviousDay()
             controlledDispatcher.scheduler.advanceUntilIdle()
@@ -349,5 +355,81 @@ class DashboardViewModelTest {
             controlledDispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(today, viewModel.uiState.value.date)
+        }
+
+    @Test
+    fun healthConnectBanner_noneGranted_showsRequestPermission() =
+        runTest {
+            val noPermissionGateway = FakeHealthConnectGateway(grantedPermissions = emptySet())
+            val viewModel = DashboardViewModel(repository, noPermissionGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(HealthConnectBannerState.REQUEST_PERMISSION, viewModel.uiState.value.healthConnectBannerState)
+        }
+
+    @Test
+    fun healthConnectBanner_partiallyGranted_showsNone() =
+        runTest {
+            val partial = setOf(HEALTH_CONNECT_PERMISSIONS.first())
+            val partialGateway = FakeHealthConnectGateway(grantedPermissions = partial)
+            val viewModel = DashboardViewModel(repository, partialGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(HealthConnectBannerState.NONE, viewModel.uiState.value.healthConnectBannerState)
+        }
+
+    @Test
+    fun healthConnectBanner_sdkUnavailable_showsUnavailable() =
+        runTest {
+            val unavailableGateway = FakeHealthConnectGateway(availability = HealthConnectAvailability.UNAVAILABLE)
+            val viewModel = DashboardViewModel(repository, unavailableGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(HealthConnectBannerState.UNAVAILABLE, viewModel.uiState.value.healthConnectBannerState)
+        }
+
+    @Test
+    fun onPermissionResult_noneGranted_emitsPermissionDeniedEvent() =
+        runTest {
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            val events = mutableListOf<Unit>()
+            val collectJob = launch(dispatcher) { viewModel.permissionDeniedEvent.toList(events) }
+
+            viewModel.onPermissionResult(emptySet())
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, events.size)
+            collectJob.cancel()
+        }
+
+    @Test
+    fun onPermissionResult_someGranted_doesNotEmitPermissionDeniedEvent() =
+        runTest {
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            val events = mutableListOf<Unit>()
+            val collectJob = launch(dispatcher) { viewModel.permissionDeniedEvent.toList(events) }
+
+            viewModel.onPermissionResult(setOf(HEALTH_CONNECT_PERMISSIONS.first()))
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(0, events.size)
+            collectJob.cancel()
+        }
+
+    @Test
+    fun onPermissionResult_refreshesBannerState() =
+        runTest {
+            val mutableGateway = FakeHealthConnectGateway(grantedPermissions = emptySet())
+            val viewModel = DashboardViewModel(repository, mutableGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            assertEquals(HealthConnectBannerState.REQUEST_PERMISSION, viewModel.uiState.value.healthConnectBannerState)
+
+            mutableGateway.grantedPermissions = HEALTH_CONNECT_PERMISSIONS
+            viewModel.onPermissionResult(HEALTH_CONNECT_PERMISSIONS)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(HealthConnectBannerState.NONE, viewModel.uiState.value.healthConnectBannerState)
         }
 }

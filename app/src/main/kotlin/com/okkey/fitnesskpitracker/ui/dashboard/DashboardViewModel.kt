@@ -2,6 +2,9 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
+import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
+import com.okkey.fitnesskpitracker.data.HealthConnectGateway
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
@@ -11,11 +14,16 @@ import com.okkey.fitnesskpitracker.domain.dailyScoreAchievement
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+
+enum class HealthConnectBannerState { NONE, REQUEST_PERMISSION, UNAVAILABLE }
 
 data class DashboardUiState(
     val date: LocalDate,
@@ -31,15 +39,20 @@ data class DashboardUiState(
     val daysUntilDeadline: Long = 0,
     val isWeightOverdue: Boolean = false,
     val weightHistory: List<WeightPoint> = emptyList(),
+    val healthConnectBannerState: HealthConnectBannerState = HealthConnectBannerState.NONE,
 )
 
 class DashboardViewModel(
     private val repository: MetricsRepository,
+    private val healthConnectGateway: HealthConnectGateway,
     private val today: () -> LocalDate,
 ) : ViewModel() {
     private var selectedDate: LocalDate = today()
     private val _uiState = MutableStateFlow(DashboardUiState(date = selectedDate))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _permissionDeniedEvent = MutableSharedFlow<Unit>()
+    val permissionDeniedEvent: SharedFlow<Unit> = _permissionDeniedEvent.asSharedFlow()
 
     // Bumped on every reload, so a slow, out-of-order refresh never clobbers a newer one.
     private var generation = 0
@@ -49,6 +62,13 @@ class DashboardViewModel(
     }
 
     fun onReload() {
+        refresh()
+    }
+
+    fun onPermissionResult(grantedPermissions: Set<String>) {
+        if (HEALTH_CONNECT_PERMISSIONS.none { it in grantedPermissions }) {
+            viewModelScope.launch { _permissionDeniedEvent.emit(Unit) }
+        }
         refresh()
     }
 
@@ -78,6 +98,7 @@ class DashboardViewModel(
             val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
             val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
             val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, WEIGHT_DEADLINE)
+            val bannerState = healthConnectBannerState()
             if (requestGeneration != generation) return@launch
 
             _uiState.value =
@@ -95,7 +116,20 @@ class DashboardViewModel(
                     daysUntilDeadline = daysUntilWeightDeadline(todayDate),
                     isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
                     weightHistory = weightHistory,
+                    healthConnectBannerState = bannerState,
                 )
+        }
+    }
+
+    private suspend fun healthConnectBannerState(): HealthConnectBannerState {
+        if (healthConnectGateway.availability() != HealthConnectAvailability.AVAILABLE) {
+            return HealthConnectBannerState.UNAVAILABLE
+        }
+        val granted = healthConnectGateway.grantedPermissions()
+        return if (HEALTH_CONNECT_PERMISSIONS.any { it in granted }) {
+            HealthConnectBannerState.NONE
+        } else {
+            HealthConnectBannerState.REQUEST_PERMISSION
         }
     }
 }

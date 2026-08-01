@@ -30,3 +30,4 @@ pulltorefresh
 automirrored
 uiautomator
 drawscope
+javap
