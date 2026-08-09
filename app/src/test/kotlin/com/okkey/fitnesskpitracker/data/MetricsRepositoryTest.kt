@@ -272,13 +272,13 @@ class MetricsRepositoryTest {
     fun findActivityScoreRange_noRecords_returnsAllNullScores() =
         runTest {
             val result =
-                repository.findActivityScoreRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 3))
+                repository.findActivityScoreRange(LocalDate.parse("2026-08-01"), LocalDate.parse("2026-08-03"))
 
             assertEquals(
                 listOf(
-                    DailyActivityScorePoint(LocalDate.of(2026, 8, 1), null),
-                    DailyActivityScorePoint(LocalDate.of(2026, 8, 2), null),
-                    DailyActivityScorePoint(LocalDate.of(2026, 8, 3), null),
+                    DailyActivityScorePoint(LocalDate.parse("2026-08-01"), null),
+                    DailyActivityScorePoint(LocalDate.parse("2026-08-02"), null),
+                    DailyActivityScorePoint(LocalDate.parse("2026-08-03"), null),
                 ),
                 result,
             )
@@ -287,7 +287,7 @@ class MetricsRepositoryTest {
     @Test
     fun findActivityScoreRange_recordedDay_returnsComputedScore() =
         runTest {
-            val date = LocalDate.of(2026, 8, 2)
+            val date = LocalDate.parse("2026-08-02")
             repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
 
             val result = repository.findActivityScoreRange(date, date)
@@ -298,7 +298,7 @@ class MetricsRepositoryTest {
     @Test
     fun findActivityScoreRange_rowWithOnlyWeight_treatsAsNoData() =
         runTest {
-            val date = LocalDate.of(2026, 8, 2)
+            val date = LocalDate.parse("2026-08-02")
             repository.saveManual(date, steps = null, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
 
             val result = repository.findActivityScoreRange(date, date)
@@ -309,7 +309,7 @@ class MetricsRepositoryTest {
     @Test
     fun findActivityScoreRange_healthConnectZeroSteps_returnsZeroScoreNotNull() =
         runTest {
-            val date = LocalDate.of(2026, 8, 2)
+            val date = LocalDate.parse("2026-08-02")
             database.dailyMetricsDao().upsertHealthConnect(
                 date,
                 steps = HealthConnectFieldUpdate.Write(0L),

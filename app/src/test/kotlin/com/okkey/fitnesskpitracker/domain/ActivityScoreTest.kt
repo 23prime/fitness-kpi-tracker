@@ -79,9 +79,9 @@ class ActivityScoreTest {
 
     @Test
     fun activityScoreHistoryWindowStart_returnsSixDaysBeforeEndDate() {
-        val start = activityScoreHistoryWindowStart(LocalDate.of(2026, 8, 9))
+        val start = activityScoreHistoryWindowStart(LocalDate.parse("2026-08-09"))
 
-        assertEquals(LocalDate.of(2026, 8, 3), start)
+        assertEquals(LocalDate.parse("2026-08-03"), start)
     }
 
     @Test

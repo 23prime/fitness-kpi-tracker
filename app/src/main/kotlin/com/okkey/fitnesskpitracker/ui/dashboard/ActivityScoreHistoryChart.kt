@@ -116,12 +116,15 @@ private fun HistoryChartYAxisLabels(
 private fun formatHistoryChartScore(score: Double): String = String.format(Locale.ROOT, "%.0f", score)
 
 // Rounds the per-division step up to the nearest HISTORY_CHART_AXIS_STEP so axis labels
-// land on round numbers (0/50/100/...) instead of fractions of the raw max score.
+// land on round numbers (0/50/100/...) instead of fractions of the raw max score. When the
+// rounded bound lands exactly on the raw max, bump it by one more division so the tallest
+// bar always has headroom instead of touching the chart's top edge.
 private fun historyChartUpperBound(scores: List<Double>): Double {
     val rawUpperBound = activityScoreChartUpperBound(scores)
-    val step =
+    val stepPerDivision =
         ceil(rawUpperBound / HISTORY_CHART_GRID_DIVISIONS / HISTORY_CHART_AXIS_STEP) * HISTORY_CHART_AXIS_STEP
-    return step * HISTORY_CHART_GRID_DIVISIONS
+    val upperBound = stepPerDivision * HISTORY_CHART_GRID_DIVISIONS
+    return if (upperBound > rawUpperBound) upperBound else upperBound + stepPerDivision
 }
 
 private fun DrawScope.drawHistoryChartGrid(gridColor: Color) {
