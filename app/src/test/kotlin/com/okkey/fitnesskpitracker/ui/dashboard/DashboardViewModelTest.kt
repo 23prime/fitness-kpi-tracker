@@ -3,6 +3,7 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.okkey.fitnesskpitracker.data.AppDatabase
+import com.okkey.fitnesskpitracker.data.DailyActivityScorePoint
 import com.okkey.fitnesskpitracker.data.FakeHealthConnectGateway
 import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
 import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
@@ -10,6 +11,7 @@ import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
+import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.CompletableDeferred
@@ -78,6 +80,57 @@ class DashboardViewModelTest {
             assertFalse(state.isWeightOverdue)
             assertEquals(daysUntilWeightDeadline(today), state.daysUntilDeadline)
             assertEquals(emptyList(), state.weightHistory)
+            val windowStart = activityScoreHistoryWindowStart(today)
+            assertEquals(
+                (0..6).map { DailyActivityScorePoint(windowStart.plusDays(it.toLong()), null) },
+                state.activityScoreHistory,
+            )
+        }
+
+    @Test
+    fun refresh_activityScoreHistory_coversSevenDaysEndingAtSelectedDate() =
+        runTest {
+            repository.saveManual(today, steps = 5_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            repository.saveManual(
+                today.minusDays(2),
+                steps = 1_000L,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val history = viewModel.uiState.value.activityScoreHistory
+            assertEquals(7, history.size)
+            assertEquals(activityScoreHistoryWindowStart(today), history.first().date)
+            assertEquals(today, history.last().date)
+            assertEquals(100.0, history.first { it.date == today }.score)
+            assertEquals(20.0, history.first { it.date == today.minusDays(2) }.score)
+        }
+
+    @Test
+    fun onPreviousDay_activityScoreHistory_shiftsWindowToEndAtNewSelectedDate() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val history = viewModel.uiState.value.activityScoreHistory
+            assertEquals(today.minusDays(1), history.last().date)
+            assertEquals(activityScoreHistoryWindowStart(today.minusDays(1)), history.first().date)
         }
 
     @Test

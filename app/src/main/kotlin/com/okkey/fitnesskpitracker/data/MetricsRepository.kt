@@ -3,6 +3,7 @@ package com.okkey.fitnesskpitracker.data
 import androidx.health.connect.client.permission.HealthPermission
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.records.WeightRecord
+import com.okkey.fitnesskpitracker.domain.activityScore
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
@@ -26,6 +27,13 @@ data class DailyMetricsValues(
 data class WeightPoint(
     val date: LocalDate,
     val weightKg: Double,
+)
+
+data class DailyActivityScorePoint(
+    val date: LocalDate,
+    // Null means no activity was recorded for this date (no row, or a row with only
+    // weight data), distinct from a recorded score of 0.
+    val score: Double?,
 )
 
 class MetricsRepository(
@@ -75,6 +83,27 @@ class MetricsRepository(
             val weightKg = entity.weightKgManual ?: entity.weightKgHealthConnect
             weightKg?.let { WeightPoint(entity.date, it) }
         }
+
+    suspend fun findActivityScoreRange(
+        startDate: LocalDate,
+        endDate: LocalDate,
+    ): List<DailyActivityScorePoint> {
+        val entitiesByDate = dao.observeByDateRange(startDate, endDate).first().associateBy { it.date }
+        return generateSequence(startDate) { it.plusDays(1) }
+            .takeWhile { !it.isAfter(endDate) }
+            .map { date -> DailyActivityScorePoint(date, entitiesByDate[date]?.let(::effectiveActivityScoreOrNull)) }
+            .toList()
+    }
+
+    // Null when the day has no recorded activity at all, so callers can distinguish
+    // "not recorded" from a genuine 0 pt day (e.g. Health Connect wrote 0 steps).
+    private fun effectiveActivityScoreOrNull(entity: DailyMetricsEntity): Double? {
+        val steps = entity.stepsManual ?: entity.stepsHealthConnect
+        val cyclingDistanceKm = entity.cyclingDistanceKmManual ?: entity.cyclingDistanceKmHealthConnect
+        val workoutSets = entity.workoutSets
+        if (steps == null && cyclingDistanceKm == null && workoutSets == null) return null
+        return activityScore(steps, cyclingDistanceKm, workoutSets)
+    }
 
     suspend fun saveManual(
         date: LocalDate,

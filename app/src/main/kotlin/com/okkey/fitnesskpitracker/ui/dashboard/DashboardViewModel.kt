@@ -2,6 +2,7 @@ package com.okkey.fitnesskpitracker.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.okkey.fitnesskpitracker.data.DailyActivityScorePoint
 import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
 import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.HealthConnectGateway
@@ -10,6 +11,7 @@ import com.okkey.fitnesskpitracker.data.WeightPoint
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScore
+import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
 import com.okkey.fitnesskpitracker.domain.dailyScoreAchievement
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
@@ -33,6 +35,7 @@ data class DashboardUiState(
     val workoutSets: Int? = null,
     val activityScore: Double = 0.0,
     val activityAchievement: Double = 0.0,
+    val activityScoreHistory: List<DailyActivityScorePoint> = emptyList(),
     val canGoToPreviousDay: Boolean = false,
     val canGoToNextDay: Boolean = false,
     val currentWeightKg: Double? = null,
@@ -134,6 +137,8 @@ class DashboardViewModel(
         val activityValues = repository.findEffectiveByDate(date)
         val score =
             activityScore(activityValues.steps, activityValues.cyclingDistanceKm, activityValues.workoutSets)
+        val activityScoreHistory =
+            repository.findActivityScoreRange(activityScoreHistoryWindowStart(date), date)
         val earliestDate = repository.findEarliestDate() ?: date
         val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
         val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
@@ -149,6 +154,7 @@ class DashboardViewModel(
                 workoutSets = activityValues.workoutSets,
                 activityScore = score,
                 activityAchievement = dailyScoreAchievement(score),
+                activityScoreHistory = activityScoreHistory,
                 canGoToPreviousDay = date > earliestDate,
                 canGoToNextDay = date < todayDate,
                 currentWeightKg = currentWeightKg,
