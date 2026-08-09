@@ -10,6 +10,12 @@ class FakeHealthConnectGateway(
     var readDailyStepsError: Throwable? = null,
     var readWeightSamplesError: Throwable? = null,
 ) : HealthConnectGateway {
+    // Awaited only on the first call to readDailySteps, so a test can pause exactly one
+    // in-flight sync (e.g. a manual refresh) while a later, unrelated sync (e.g. a resume)
+    // still completes immediately.
+    var onFirstReadDailySteps: suspend () -> Unit = {}
+    private var readDailyStepsCallCount = 0
+
     override suspend fun availability(): HealthConnectAvailability = availability
 
     override suspend fun grantedPermissions(): Set<String> = grantedPermissions
@@ -18,6 +24,8 @@ class FakeHealthConnectGateway(
         startDate: LocalDate,
         endDate: LocalDate,
     ): Map<LocalDate, Long> {
+        readDailyStepsCallCount++
+        if (readDailyStepsCallCount == 1) onFirstReadDailySteps()
         readDailyStepsError?.let { throw it }
         return dailySteps.filterKeys { it in startDate..endDate }
     }

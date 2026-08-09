@@ -62,6 +62,10 @@ class DashboardViewModel(
     // Bumped on every reload, so a slow, out-of-order refresh never clobbers a newer one.
     private var generation = 0
 
+    // Set for the duration of onManualRefresh(), so an overlapping onResume() refresh
+    // doesn't clear the loading indicator early by rebuilding state with isSyncing's default.
+    private var isManualRefreshing = false
+
     init {
         refresh()
     }
@@ -80,12 +84,14 @@ class DashboardViewModel(
 
     fun onManualRefresh() {
         viewModelScope.launch {
+            isManualRefreshing = true
             _uiState.value = _uiState.value.copy(isSyncing = true)
             try {
                 val succeeded = trySyncHealthConnect()
                 refreshSuspend()
                 if (!succeeded) _syncFailedEvent.emit(Unit)
             } finally {
+                isManualRefreshing = false
                 _uiState.value = _uiState.value.copy(isSyncing = false)
             }
         }
@@ -151,6 +157,7 @@ class DashboardViewModel(
                 isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
                 weightHistory = weightHistory,
                 healthConnectBannerState = bannerState,
+                isSyncing = isManualRefreshing,
             )
     }
 
