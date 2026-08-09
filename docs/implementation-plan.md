@@ -22,7 +22,7 @@
 | `date` | `LocalDate` | 対象日。主キー。 |
 | `steps_health_connect` | `Long?` | Health Connect から取得した歩数。 |
 | `steps_manual` | `Long?` | 手入力で補正した歩数。 |
-| `cycling_distance_km_health_connect` | `Double?` | 未使用。サイクリング距離は Health Connect 同期の対象外のため常に `null`（#40）。 |
+| `cycling_distance_km_health_connect` | `Double?` | サイクリング距離は Health Connect 同期の対象外のため、同期処理はこのカラムを書き込まない（#40）。 |
 | `cycling_distance_km_manual` | `Double?` | 手入力で補正したサイクリング距離。 |
 | `weight_kg_health_connect` | `Double?` | Health Connect から取得した体重。 |
 | `weight_kg_manual` | `Double?` | 手入力で補正した体重。 |
@@ -103,7 +103,7 @@ progress = (WEIGHT_BASELINE_KG - current) / (WEIGHT_BASELINE_KG - WEIGHT_TARGET_
 | 歩数 | `StepsRecord.COUNT_TOTAL` を `Period.ofDays(1)` でグループ集計する。 |
 | 体重 | `WeightRecord` を読み、各日の最後のレコードを採用する。 |
 
-サイクリング距離は実機に記録がなく、今後入る見込みも薄いため Health Connect 同期の対象外とし、手入力専用とする（#40）。`cycling_distance_km_health_connect` カラムはスキーマに残すが、恒久的に `null` のままとなる。
+サイクリング距離は実機に記録がなく、今後入る見込みも薄いため Health Connect 同期の対象外とし、手入力専用とする（#40）。`cycling_distance_km_health_connect` カラムはスキーマに残すが、同期処理はこのカラムを書き込まない。
 
 必要な権限は `READ_STEPS`、`READ_WEIGHT` の 2 つ。
 
