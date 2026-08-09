@@ -193,17 +193,6 @@ private fun EntryFields(
         EntryField(
             state =
                 EntryFieldState(
-                    label = stringResource(R.string.entry_label_weight),
-                    value = uiState.weightInput,
-                    error = uiState.weightError,
-                    healthConnectValue = uiState.weightKgHealthConnect?.toString(),
-                ),
-            onValueChange = { onFieldChanged(ManualField.WEIGHT, it) },
-            onClear = { onClearField(ManualField.WEIGHT) },
-        )
-        EntryField(
-            state =
-                EntryFieldState(
                     label = stringResource(R.string.entry_label_workout_sets),
                     value = uiState.workoutSetsInput,
                     error = uiState.workoutSetsError,
@@ -211,6 +200,17 @@ private fun EntryFields(
                 ),
             onValueChange = { onFieldChanged(ManualField.WORKOUT_SETS, it) },
             onClear = { onClearField(ManualField.WORKOUT_SETS) },
+        )
+        EntryField(
+            state =
+                EntryFieldState(
+                    label = stringResource(R.string.entry_label_weight),
+                    value = uiState.weightInput,
+                    error = uiState.weightError,
+                    healthConnectValue = uiState.weightKgHealthConnect?.toString(),
+                ),
+            onValueChange = { onFieldChanged(ManualField.WEIGHT, it) },
+            onClear = { onClearField(ManualField.WEIGHT) },
         )
     }
 }
