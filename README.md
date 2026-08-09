@@ -2,7 +2,7 @@
 
 自分専用の Android アプリ。日々の活動量と体重を KPI 化し、目標に対する進捗を一目で把握できるようにする。
 
-歩数・サイクリング距離・体重は Health Connect から取得し、ワークアウトのセット数は手入力する。詳細な要件は [docs/requirements.md](docs/requirements.md) を参照。
+歩数・体重は Health Connect から取得し、サイクリング距離とワークアウトのセット数は手入力する。詳細な要件は [docs/requirements.md](docs/requirements.md) を参照。
 
 ## 実機での実行
 

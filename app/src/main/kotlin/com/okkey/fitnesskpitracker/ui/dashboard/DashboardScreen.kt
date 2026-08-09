@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +45,7 @@ import kotlin.math.roundToInt
 
 internal val DATE_DISPLAY_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd")
 private const val PERCENT_SCALE = 100
+private val SYNC_INDICATOR_SIZE = 24.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +56,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val permissionDeniedMessage = stringResource(R.string.dashboard_permission_denied_message)
+    val syncFailedMessage = stringResource(R.string.dashboard_sync_failed_message)
 
     LaunchedEffect(viewModel) {
         viewModel.permissionDeniedEvent.collect {
@@ -60,7 +64,13 @@ fun DashboardScreen(
         }
     }
 
-    ReloadOnResume(viewModel::onReload)
+    LaunchedEffect(viewModel) {
+        viewModel.syncFailedEvent.collect {
+            snackbarHostState.showSnackbar(syncFailedMessage)
+        }
+    }
+
+    ReloadOnResume(viewModel::onResume)
 
     val permissionLauncher =
         rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
@@ -73,12 +83,7 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.dashboard_title)) },
                 actions = {
-                    IconButton(onClick = viewModel::onReload) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = stringResource(R.string.dashboard_button_reload),
-                        )
-                    }
+                    RefreshAction(isSyncing = uiState.isSyncing, onClick = viewModel::onManualRefresh)
                 },
             )
         },
@@ -103,6 +108,23 @@ fun DashboardScreen(
                 onNextDay = viewModel::onNextDay,
             )
             WeightGoalSection(uiState)
+        }
+    }
+}
+
+@Composable
+private fun RefreshAction(
+    isSyncing: Boolean,
+    onClick: () -> Unit,
+) {
+    IconButton(onClick = onClick, enabled = !isSyncing) {
+        if (isSyncing) {
+            CircularProgressIndicator(modifier = Modifier.size(SYNC_INDICATOR_SIZE))
+        } else {
+            Icon(
+                Icons.Default.Refresh,
+                contentDescription = stringResource(R.string.dashboard_button_reload),
+            )
         }
     }
 }

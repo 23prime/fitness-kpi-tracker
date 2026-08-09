@@ -12,6 +12,7 @@ import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -431,5 +432,97 @@ class DashboardViewModelTest {
             dispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(HealthConnectBannerState.NONE, viewModel.uiState.value.healthConnectBannerState)
+        }
+
+    @Test
+    fun onResume_syncsHealthConnectDataSilentlyWithoutLoadingOrSnackbar() =
+        runTest {
+            val syncGateway = FakeHealthConnectGateway(dailySteps = mapOf(today to 8_000L))
+            val viewModel = DashboardViewModel(repository, syncGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            val events = mutableListOf<Unit>()
+            val collectJob = launch(dispatcher) { viewModel.syncFailedEvent.toList(events) }
+
+            viewModel.onResume()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(8_000L, viewModel.uiState.value.steps)
+            assertFalse(viewModel.uiState.value.isSyncing)
+            assertEquals(0, events.size)
+            collectJob.cancel()
+        }
+
+    @Test
+    fun onManualRefresh_success_syncsHealthConnectDataAndClearsLoading() =
+        runTest {
+            val syncGateway = FakeHealthConnectGateway(dailySteps = mapOf(today to 8_000L))
+            val viewModel = DashboardViewModel(repository, syncGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onManualRefresh()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(8_000L, viewModel.uiState.value.steps)
+            assertFalse(viewModel.uiState.value.isSyncing)
+        }
+
+    @Test
+    fun onManualRefresh_readFailure_emitsSyncFailedEventAndClearsLoading() =
+        runTest {
+            val failingGateway = FakeHealthConnectGateway(readDailyStepsError = IllegalStateException("boom"))
+            val viewModel = DashboardViewModel(repository, failingGateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+            val events = mutableListOf<Unit>()
+            val collectJob = launch(dispatcher) { viewModel.syncFailedEvent.toList(events) }
+
+            viewModel.onManualRefresh()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(1, events.size)
+            assertFalse(viewModel.uiState.value.isSyncing)
+            collectJob.cancel()
+        }
+
+    @Test
+    fun onManualRefresh_resumeCompletesWhileManualRefreshStillInFlight_keepsLoadingUntilManualRefreshFinishes() =
+        runTest {
+            val controlledDispatcher = StandardTestDispatcher(testScheduler)
+            Dispatchers.setMain(controlledDispatcher)
+            val gate = CompletableDeferred<Unit>()
+            val syncGateway =
+                FakeHealthConnectGateway(dailySteps = mapOf(today to 8_000L)).apply {
+                    onFirstReadDailySteps = { gate.await() }
+                }
+            val viewModel = DashboardViewModel(repository, syncGateway) { today }
+            controlledDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onManualRefresh()
+            controlledDispatcher.scheduler.runCurrent()
+            assertTrue(viewModel.uiState.value.isSyncing)
+
+            viewModel.onResume()
+            controlledDispatcher.scheduler.advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.isSyncing)
+
+            gate.complete(Unit)
+            controlledDispatcher.scheduler.advanceUntilIdle()
+            assertFalse(viewModel.uiState.value.isSyncing)
+        }
+
+    @Test
+    fun onManualRefresh_overlappingOnResume_stillClearsLoadingWhenManualRefreshFinishes() =
+        runTest {
+            val controlledDispatcher = StandardTestDispatcher(testScheduler)
+            Dispatchers.setMain(controlledDispatcher)
+            val syncGateway = FakeHealthConnectGateway(dailySteps = mapOf(today to 8_000L))
+            val viewModel = DashboardViewModel(repository, syncGateway) { today }
+            controlledDispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onManualRefresh()
+            controlledDispatcher.scheduler.runCurrent()
+            viewModel.onResume()
+            controlledDispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isSyncing)
         }
 }

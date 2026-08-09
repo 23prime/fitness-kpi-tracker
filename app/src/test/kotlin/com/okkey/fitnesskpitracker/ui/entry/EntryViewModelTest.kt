@@ -3,6 +3,7 @@ package com.okkey.fitnesskpitracker.ui.entry
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.okkey.fitnesskpitracker.data.AppDatabase
+import com.okkey.fitnesskpitracker.data.HealthConnectFieldUpdate
 import com.okkey.fitnesskpitracker.data.ManualField
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import kotlinx.coroutines.Dispatchers
@@ -205,9 +206,8 @@ class EntryViewModelTest {
             val otherDate = LocalDate.of(2026, 7, 20)
             database.dailyMetricsDao().upsertHealthConnect(
                 otherDate,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 12.0,
-                weightKgHealthConnect = 70.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(70.0),
             )
             repository.saveManual(
                 otherDate,
@@ -226,7 +226,7 @@ class EntryViewModelTest {
             assertEquals("", state.cyclingDistanceInput)
             assertEquals("", state.weightInput)
             assertEquals(8_000L, state.stepsHealthConnect)
-            assertEquals(12.0, state.cyclingDistanceKmHealthConnect)
+            assertNull(state.cyclingDistanceKmHealthConnect)
             assertEquals(70.0, state.weightKgHealthConnect)
         }
 
@@ -235,9 +235,8 @@ class EntryViewModelTest {
         runTest {
             database.dailyMetricsDao().upsertHealthConnect(
                 today,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 12.0,
-                weightKgHealthConnect = 70.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(70.0),
             )
             dispatcher.scheduler.advanceUntilIdle()
             viewModel.onDateSelected(today)
@@ -254,7 +253,7 @@ class EntryViewModelTest {
             assertEquals(10, entity?.workoutSets)
             val effective = repository.findEffectiveByDate(today)
             assertEquals(8_000L, effective.steps)
-            assertEquals(12.0, effective.cyclingDistanceKm)
+            assertNull(effective.cyclingDistanceKm)
             assertEquals(70.0, effective.weightKg)
         }
 

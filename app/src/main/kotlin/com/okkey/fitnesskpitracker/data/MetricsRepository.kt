@@ -1,7 +1,13 @@
 package com.okkey.fitnesskpitracker.data
 
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.records.WeightRecord
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import java.time.LocalDate
+
+private const val SYNC_RANGE_DAYS = 30L
 
 enum class ManualField {
     STEPS,
@@ -84,5 +90,63 @@ class MetricsRepository(
             weightKgManual = weightKg,
             workoutSets = workoutSets,
         )
+    }
+
+    // Returns false if a granted category failed to read, so the caller can surface a failure
+    // without losing already-synced data (fields without permission or unreadable are left untouched).
+    suspend fun syncHealthConnect(
+        gateway: HealthConnectGateway,
+        today: LocalDate,
+    ): Boolean {
+        val startDate = today.minusDays(SYNC_RANGE_DAYS - 1)
+        val granted = gateway.grantedPermissions()
+        val stepsGranted = HealthPermission.getReadPermission(StepsRecord::class) in granted
+        val weightGranted = HealthPermission.getReadPermission(WeightRecord::class) in granted
+        if (!stepsGranted && !weightGranted) return true
+
+        var succeeded = true
+
+        val dailySteps =
+            if (stepsGranted) {
+                runCatching { gateway.readDailySteps(startDate, today) }
+                    .onFailure {
+                        if (it is CancellationException) throw it
+                        succeeded = false
+                    }.getOrNull()
+            } else {
+                null
+            }
+
+        val dailyWeight =
+            if (weightGranted) {
+                runCatching { gateway.readWeightSamples(startDate, today) }
+                    .mapCatching { latestWeightPerDate(it) }
+                    .onFailure {
+                        if (it is CancellationException) throw it
+                        succeeded = false
+                    }.getOrNull()
+            } else {
+                null
+            }
+
+        var date = startDate
+        while (!date.isAfter(today)) {
+            val stepsUpdate =
+                if (stepsGranted && dailySteps != null) {
+                    HealthConnectFieldUpdate.Write(dailySteps[date] ?: 0L)
+                } else {
+                    HealthConnectFieldUpdate.Skip
+                }
+            val weightUpdate =
+                if (weightGranted && dailyWeight != null) {
+                    HealthConnectFieldUpdate.Write(dailyWeight[date])
+                } else {
+                    HealthConnectFieldUpdate.Skip
+                }
+            dao.upsertHealthConnect(date, stepsUpdate, weightUpdate)
+            date = date.plusDays(1)
+        }
+
+        return succeeded
     }
 }
