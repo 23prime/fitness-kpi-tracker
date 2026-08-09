@@ -1,5 +1,7 @@
 package com.okkey.fitnesskpitracker.data
 
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.WeightRecord
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
@@ -9,8 +11,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
 class MetricsRepositoryTest {
@@ -63,16 +68,15 @@ class MetricsRepositoryTest {
             val date = LocalDate.of(2026, 7, 28)
             database.dailyMetricsDao().upsertHealthConnect(
                 date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 10.0,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
             repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
 
             val values = repository.findEffectiveByDate(date)
 
             assertEquals(4_000L, values.steps)
-            assertEquals(10.0, values.cyclingDistanceKm)
+            assertNull(values.cyclingDistanceKm)
             assertEquals(60.0, values.weightKg)
         }
 
@@ -97,9 +101,8 @@ class MetricsRepositoryTest {
             val date = LocalDate.of(2026, 7, 28)
             database.dailyMetricsDao().upsertHealthConnect(
                 date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 10.0,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
             repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = 21)
 
@@ -110,7 +113,7 @@ class MetricsRepositoryTest {
             assertNull(manual.weightKg)
             assertEquals(21, manual.workoutSets)
             assertEquals(8_000L, healthConnect.steps)
-            assertEquals(10.0, healthConnect.cyclingDistanceKm)
+            assertNull(healthConnect.cyclingDistanceKm)
             assertEquals(60.0, healthConnect.weightKg)
             assertNull(healthConnect.workoutSets)
         }
@@ -203,9 +206,8 @@ class MetricsRepositoryTest {
             val date = LocalDate.of(2026, 8, 5)
             database.dailyMetricsDao().upsertHealthConnect(
                 date,
-                stepsHealthConnect = null,
-                cyclingDistanceKmHealthConnect = null,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Skip,
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
             repository.saveManual(date, steps = null, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
 
@@ -264,5 +266,98 @@ class MetricsRepositoryTest {
                 ),
                 result,
             )
+        }
+
+    @Test
+    fun syncHealthConnect_partialPermission_onlyUpdatesGrantedField() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            val gateway =
+                FakeHealthConnectGateway(
+                    grantedPermissions = setOf(HealthPermission.getReadPermission(WeightRecord::class)),
+                    weightSamples = listOf(WeightSample(today.atStartOfDay(ZoneId.systemDefault()).toInstant(), 60.0)),
+                )
+
+            repository.syncHealthConnect(gateway, today)
+
+            val healthConnect = repository.findSplitByDate(today).second
+            assertNull(healthConnect.steps)
+            assertEquals(60.0, healthConnect.weightKg)
+        }
+
+    @Test
+    fun syncHealthConnect_doesNotOverwriteManualValues() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            repository.saveManual(today, steps = 1_000L, cyclingDistanceKm = null, weightKg = 58.0, workoutSets = null)
+            val gateway =
+                FakeHealthConnectGateway(
+                    dailySteps = mapOf(today to 8_000L),
+                    weightSamples = listOf(WeightSample(today.atStartOfDay(ZoneId.systemDefault()).toInstant(), 60.0)),
+                )
+
+            repository.syncHealthConnect(gateway, today)
+
+            val effective = repository.findEffectiveByDate(today)
+            assertEquals(1_000L, effective.steps)
+            assertEquals(58.0, effective.weightKg)
+            val healthConnect = repository.findSplitByDate(today).second
+            assertEquals(8_000L, healthConnect.steps)
+            assertEquals(60.0, healthConnect.weightKg)
+        }
+
+    @Test
+    fun syncHealthConnect_neverTouchesCyclingDistanceColumn() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            repository.saveManual(today, steps = null, cyclingDistanceKm = 5.0, weightKg = null, workoutSets = null)
+            val gateway = FakeHealthConnectGateway(dailySteps = mapOf(today to 8_000L))
+
+            repository.syncHealthConnect(gateway, today)
+
+            assertEquals(5.0, repository.findEffectiveByDate(today).cyclingDistanceKm)
+        }
+
+    @Test
+    fun syncHealthConnect_zeroRecordDay_savesZeroStepsAndNullWeight() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            val gateway = FakeHealthConnectGateway(dailySteps = emptyMap(), weightSamples = emptyList())
+
+            repository.syncHealthConnect(gateway, today)
+
+            val healthConnect = repository.findSplitByDate(today).second
+            assertEquals(0L, healthConnect.steps)
+            assertNull(healthConnect.weightKg)
+        }
+
+    @Test
+    fun syncHealthConnect_readFailure_keepsExistingValuesAndReturnsFalse() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            database.dailyMetricsDao().upsertHealthConnect(
+                today,
+                steps = HealthConnectFieldUpdate.Write(5_000L),
+                weightKg = HealthConnectFieldUpdate.Write(59.0),
+            )
+            val gateway = FakeHealthConnectGateway(readDailyStepsError = IllegalStateException("boom"))
+
+            val succeeded = repository.syncHealthConnect(gateway, today)
+
+            assertFalse(succeeded)
+            val healthConnect = repository.findSplitByDate(today).second
+            assertEquals(5_000L, healthConnect.steps)
+        }
+
+    @Test
+    fun syncHealthConnect_noPermissionGranted_doesNothing() =
+        runTest {
+            val today = LocalDate.of(2026, 7, 28)
+            val gateway = FakeHealthConnectGateway(grantedPermissions = emptySet())
+
+            val succeeded = repository.syncHealthConnect(gateway, today)
+
+            assertTrue(succeeded)
+            assertNull(database.dailyMetricsDao().findByDate(today))
         }
 }

@@ -14,6 +14,7 @@ import com.okkey.fitnesskpitracker.domain.dailyScoreAchievement
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -40,6 +41,7 @@ data class DashboardUiState(
     val isWeightOverdue: Boolean = false,
     val weightHistory: List<WeightPoint> = emptyList(),
     val healthConnectBannerState: HealthConnectBannerState = HealthConnectBannerState.NONE,
+    val isSyncing: Boolean = false,
 )
 
 class DashboardViewModel(
@@ -54,6 +56,9 @@ class DashboardViewModel(
     private val _permissionDeniedEvent = MutableSharedFlow<Unit>()
     val permissionDeniedEvent: SharedFlow<Unit> = _permissionDeniedEvent.asSharedFlow()
 
+    private val _syncFailedEvent = MutableSharedFlow<Unit>()
+    val syncFailedEvent: SharedFlow<Unit> = _syncFailedEvent.asSharedFlow()
+
     // Bumped on every reload, so a slow, out-of-order refresh never clobbers a newer one.
     private var generation = 0
 
@@ -64,6 +69,32 @@ class DashboardViewModel(
     fun onReload() {
         refresh()
     }
+
+    // Silent sync for ON_RESUME: no loading indicator, no failure snackbar.
+    fun onResume() {
+        viewModelScope.launch {
+            trySyncHealthConnect()
+            refreshSuspend()
+        }
+    }
+
+    fun onManualRefresh() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSyncing = true)
+            try {
+                val succeeded = trySyncHealthConnect()
+                refreshSuspend()
+                if (!succeeded) _syncFailedEvent.emit(Unit)
+            } finally {
+                _uiState.value = _uiState.value.copy(isSyncing = false)
+            }
+        }
+    }
+
+    private suspend fun trySyncHealthConnect(): Boolean =
+        runCatching { repository.syncHealthConnect(healthConnectGateway, today()) }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrDefault(false)
 
     fun onPermissionResult(grantedPermissions: Set<String>) {
         if (HEALTH_CONNECT_PERMISSIONS.none { it in grantedPermissions }) {
@@ -87,38 +118,40 @@ class DashboardViewModel(
     }
 
     private fun refresh() {
+        viewModelScope.launch { refreshSuspend() }
+    }
+
+    private suspend fun refreshSuspend() {
         val requestGeneration = ++generation
         val date = selectedDate
-        viewModelScope.launch {
-            val todayDate = today()
-            val activityValues = repository.findEffectiveByDate(date)
-            val score =
-                activityScore(activityValues.steps, activityValues.cyclingDistanceKm, activityValues.workoutSets)
-            val earliestDate = repository.findEarliestDate() ?: date
-            val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
-            val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
-            val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, WEIGHT_DEADLINE)
-            val bannerState = healthConnectBannerState()
-            if (requestGeneration != generation) return@launch
+        val todayDate = today()
+        val activityValues = repository.findEffectiveByDate(date)
+        val score =
+            activityScore(activityValues.steps, activityValues.cyclingDistanceKm, activityValues.workoutSets)
+        val earliestDate = repository.findEarliestDate() ?: date
+        val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
+        val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
+        val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, WEIGHT_DEADLINE)
+        val bannerState = healthConnectBannerState()
+        if (requestGeneration != generation) return
 
-            _uiState.value =
-                DashboardUiState(
-                    date = date,
-                    steps = activityValues.steps,
-                    cyclingDistanceKm = activityValues.cyclingDistanceKm,
-                    workoutSets = activityValues.workoutSets,
-                    activityScore = score,
-                    activityAchievement = dailyScoreAchievement(score),
-                    canGoToPreviousDay = date > earliestDate,
-                    canGoToNextDay = date < todayDate,
-                    currentWeightKg = currentWeightKg,
-                    weightProgress = weightProgress,
-                    daysUntilDeadline = daysUntilWeightDeadline(todayDate),
-                    isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
-                    weightHistory = weightHistory,
-                    healthConnectBannerState = bannerState,
-                )
-        }
+        _uiState.value =
+            DashboardUiState(
+                date = date,
+                steps = activityValues.steps,
+                cyclingDistanceKm = activityValues.cyclingDistanceKm,
+                workoutSets = activityValues.workoutSets,
+                activityScore = score,
+                activityAchievement = dailyScoreAchievement(score),
+                canGoToPreviousDay = date > earliestDate,
+                canGoToNextDay = date < todayDate,
+                currentWeightKg = currentWeightKg,
+                weightProgress = weightProgress,
+                daysUntilDeadline = daysUntilWeightDeadline(todayDate),
+                isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
+                weightHistory = weightHistory,
+                healthConnectBannerState = bannerState,
+            )
     }
 
     private suspend fun healthConnectBannerState(): HealthConnectBannerState {

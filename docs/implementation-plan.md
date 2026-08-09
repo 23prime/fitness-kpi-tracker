@@ -22,7 +22,7 @@
 | `date` | `LocalDate` | 対象日。主キー。 |
 | `steps_health_connect` | `Long?` | Health Connect から取得した歩数。 |
 | `steps_manual` | `Long?` | 手入力で補正した歩数。 |
-| `cycling_distance_km_health_connect` | `Double?` | Health Connect から算出したサイクリング距離。 |
+| `cycling_distance_km_health_connect` | `Double?` | 未使用。サイクリング距離は Health Connect 同期の対象外のため常に `null`（#40）。 |
 | `cycling_distance_km_manual` | `Double?` | 手入力で補正したサイクリング距離。 |
 | `weight_kg_health_connect` | `Double?` | Health Connect から取得した体重。 |
 | `weight_kg_manual` | `Double?` | 手入力で補正した体重。 |
@@ -101,17 +101,20 @@ progress = (WEIGHT_BASELINE_KG - current) / (WEIGHT_BASELINE_KG - WEIGHT_TARGET_
 | 項目 | 取得方法 |
 | --- | --- |
 | 歩数 | `StepsRecord.COUNT_TOTAL` を `Period.ofDays(1)` でグループ集計する。 |
-| サイクリング距離 | `ExerciseSessionRecord` を読み、`EXERCISE_TYPE_BIKING` のセッションごとに `DistanceRecord.DISTANCE_TOTAL` を集計して日次で合算する。 |
 | 体重 | `WeightRecord` を読み、各日の最後のレコードを採用する。 |
 
-必要な権限は `READ_STEPS`、`READ_DISTANCE`、`READ_EXERCISE`、`READ_WEIGHT` の 4 つ。
+サイクリング距離は実機に記録がなく、今後入る見込みも薄いため Health Connect 同期の対象外とし、手入力専用とする（#40）。`cycling_distance_km_health_connect` カラムはスキーマに残すが、恒久的に `null` のままとなる。
+
+必要な権限は `READ_STEPS`、`READ_WEIGHT` の 2 つ。
 
 ### 同期方針
 
 - 契機はアプリの起動・復帰（`ON_RESUME`）と、ダッシュボードの手動更新ボタン。
-- 取得範囲は直近 30 日。Health Connect の既定の読み取り可能範囲に合わせる。
+- 日境界は端末のローカルタイムゾーン（`ZoneId.systemDefault()`）とする。
+- 取得範囲は当日を含む直近 30 日（`today.minusDays(29)` 〜 `today`）。当日は途中経過のため、同期のたびに上書きされる。
 - 書き込みは `*_health_connect` カラムのみ。`*_manual` には触らない。
-- 取得できなかった日は既存値を保持し、`null` で潰さない。「取得できなかった」とは Health Connect の読み取り自体が失敗・未許可だった場合を指し、正常に読み取れて 0 件だった日は 0 として保存する。
+- 権限は種別ごとにリクエストし、部分許可された場合は許可された種別のみ同期し、未許可の種別のカラムには一切触らない（既存値を保持）。
+- 取得できなかった日は既存値を保持し、`null` で潰さない。「取得できなかった」とは Health Connect の読み取り自体が失敗・未許可だった場合を指し、正常に読み取れて 0 件だった日は歩数を `0`、体重を `null` として保存する。
 - Health Connect が利用できない端末・未許可の状態でも、手入力のみでアプリが成立するようにする。
 
 ### 画面構成
@@ -237,23 +240,23 @@ Android に依存しない `domain` パッケージを作り、スコアと進�
 
 ### #11 Health Connect 連携
 
-Health Connect から歩数・サイクリング距離・体重を取得し、手入力値を残したまま反映する。
+Health Connect から歩数・体重を取得し、手入力値を残したまま反映する。#38（パーミッション基盤）・#39（入力画面の保存修正）・#40（データ同期）・#41（ドキュメント整合確認）の 4 つの子 Issue に分割済み。
 
-`EntryViewModel.onSave()`（#9）は、表示中の実効値（`manual ?: healthConnect`）を4項目まとめて`saveManual`に渡す設計になっている。Health Connect値が常に`null`である#9の時点では無害だが、本Issueで実データが入るようになると、ユーザーが1項目だけ編集して保存した場合に残り3項目のHealth Connect由来の表示値もそのまま手入力値として永続化されてしまう。編集した項目だけを送る（変更検知またはフィールド単位の差分）よう`EntryViewModel`/`MetricsRepository`を見直す必要がある。
+`EntryViewModel.onSave()`（#9）は、表示中の実効値（`manual ?: healthConnect`）を4項目まとめて`saveManual`に渡す設計になっている。Health Connect値が常に`null`である#9の時点では無害だが、実データが入るようになると、ユーザーが1項目だけ編集して保存した場合に残り3項目のHealth Connect由来の表示値もそのまま手入力値として永続化されてしまう。編集した項目だけを送る（変更検知またはフィールド単位の差分）よう`EntryViewModel`/`MetricsRepository`を見直す必要があり、#39 で対応済み。
 
 含むもの。
 
 - Manifest への権限宣言と権限根拠画面の `intent-filter`。
 - 権限リクエストの導線。
-- 歩数・サイクリング距離・体重の取得。
+- 歩数・体重の取得。
 - 起動・復帰時と手動更新ボタンによる同期。
 
 受け入れ基準。
 
-- [ ] Manifest に 4 つの読み取り権限と権限根拠画面の `intent-filter` を追加する（レガシーの `ACTION_SHOW_PERMISSIONS_RATIONALE` と、Android 14+ の `ACTION_VIEW_PERMISSION_USAGE`／`HEALTH_PERMISSIONS` カテゴリの両方）。
+- [ ] Manifest に読み取り権限と権限根拠画面の `intent-filter`（Android 14+ の `ACTION_VIEW_PERMISSION_USAGE`／`HEALTH_PERMISSIONS` カテゴリ）を追加する。
 - [ ] 未許可時に権限リクエストへ誘導し、拒否されても画面が壊れない。
 - [ ] Health Connect が利用できない場合も手入力のみで動作する。
-- [ ] 歩数・サイクリング距離・体重を直近 30 日分取得し、`*_health_connect` カラムに保存する。
+- [ ] 歩数・体重を直近 30 日分取得し、`*_health_connect` カラムに保存する。
 - [ ] 同期しても手入力値が上書きされないことを Repository のテストで検証する。
 - [ ] 起動・復帰時と手動更新ボタンで同期が走る。
 - [ ] 実機で Health Connect の実データが反映されることを確認する。
@@ -289,11 +292,9 @@ Room のデータがバックアップ・復元されることを実機で確認
 
 ## 実装時に検証が必要な事項
 
-- サイクリング距離の取得方法。`ExerciseSessionRecord`（`BIKING`）とその時間範囲の `DistanceRecord` を確実に関連付けられるか（#11）。
 - minSdk 34 でも `HealthConnectClient.sdkStatus` が `SDK_UNAVAILABLE` を返す場合の挙動（#11）。
 - Robolectric で Health Connect のクライアントをどこまで扱えるか。扱えない前提でインターフェースを分離する（#11）。
 - WAL を含む Auto Backup の復元が実機で成立するか（#12）。
-- 直近 30 日の集計で使うタイムゾーン境界（端末ローカル日時か UTC か）（#11）。
 
 ## スコープ外
 

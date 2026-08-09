@@ -29,14 +29,15 @@
     <string name="dashboard_weight_no_record">記録なし</string>
     <string name="dashboard_weight_overdue">期限を過ぎていますが、まだ目標を達成していません</string>
     <string name="dashboard_button_reload">再読み込み</string>
-    <string name="dashboard_permission_banner_message">Health Connect と連携すると歩数・距離・体重を自動取得できます</string>
+    <string name="dashboard_permission_banner_message">Health Connect と連携すると歩数・体重を自動取得できます</string>
     <string name="dashboard_permission_banner_button">許可する</string>
     <string name="dashboard_permission_unavailable_message">この端末では Health Connect を利用できません</string>
     <string name="dashboard_permission_denied_message">端末の設定の Health Connect から許可してください</string>
+    <string name="dashboard_sync_failed_message">Health Connect との同期に失敗しました</string>
 
     <string name="nav_dashboard">ダッシュボード</string>
     <string name="nav_entry">入力・補正</string>
 
     <string name="permissions_rationale_title">Health Connect の権限について</string>
-    <string name="permissions_rationale_body">歩数・サイクリング距離・エクササイズ・体重を読み取り専用で使用します。取得したデータは端末内の Room データベースにのみ保存され、外部に送信されることはありません。</string>
+    <string name="permissions_rationale_body">歩数・体重を読み取り専用で使用します。取得したデータは端末内の Room データベースにのみ保存され、外部に送信されることはありません。</string>
 </resources>

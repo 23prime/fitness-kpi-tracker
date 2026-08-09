@@ -40,15 +40,14 @@ class DailyMetricsDaoTest {
 
             dao.upsertHealthConnect(
                 date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 10.0,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
 
             val row = dao.observeByDateRange(date, date).first().single()
             assertEquals(8_000L, row.stepsHealthConnect)
-            assertEquals(10.0, row.cyclingDistanceKmHealthConnect)
             assertEquals(60.0, row.weightKgHealthConnect)
+            assertNull(row.cyclingDistanceKmHealthConnect)
             assertNull(row.stepsManual)
             assertNull(row.cyclingDistanceKmManual)
             assertNull(row.weightKgManual)
@@ -69,19 +68,112 @@ class DailyMetricsDaoTest {
 
             dao.upsertHealthConnect(
                 date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 10.0,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
 
             val row = dao.observeByDateRange(date, date).first().single()
             assertEquals(8_000L, row.stepsHealthConnect)
-            assertEquals(10.0, row.cyclingDistanceKmHealthConnect)
             assertEquals(60.0, row.weightKgHealthConnect)
             assertEquals(4_000L, row.stepsManual)
             assertEquals(5.0, row.cyclingDistanceKmManual)
             assertEquals(59.5, row.weightKgManual)
             assertEquals(21, row.workoutSets)
+        }
+
+    @Test
+    fun upsertHealthConnect_neverTouchesCyclingDistanceColumn() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            dao.upsertManual(
+                date,
+                stepsManual = null,
+                cyclingDistanceKmManual = 5.0,
+                weightKgManual = null,
+                workoutSets = null,
+            )
+
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
+            )
+
+            val row = dao.observeByDateRange(date, date).first().single()
+            assertEquals(5.0, row.cyclingDistanceKmManual)
+            assertNull(row.cyclingDistanceKmHealthConnect)
+        }
+
+    @Test
+    fun upsertHealthConnect_skipLeavesExistingHealthConnectColumnUntouched() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
+            )
+
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Skip,
+                weightKg = HealthConnectFieldUpdate.Write(59.0),
+            )
+
+            val row = dao.observeByDateRange(date, date).first().single()
+            assertEquals(8_000L, row.stepsHealthConnect)
+            assertEquals(59.0, row.weightKgHealthConnect)
+        }
+
+    @Test
+    fun upsertHealthConnect_writeNullExplicitlyClearsExistingHealthConnectColumn() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
+            )
+
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Write(0L),
+                weightKg = HealthConnectFieldUpdate.Write(null),
+            )
+
+            val row = dao.observeByDateRange(date, date).first().single()
+            assertEquals(0L, row.stepsHealthConnect)
+            assertNull(row.weightKgHealthConnect)
+        }
+
+    @Test
+    fun upsertHealthConnect_allSkipDoesNotInsertRow() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Skip,
+                weightKg = HealthConnectFieldUpdate.Skip,
+            )
+
+            val row = dao.findByDate(date)
+            assertNull(row)
+        }
+
+    @Test
+    fun upsertHealthConnect_skipAndWriteNullDoesNotInsertRow() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+
+            dao.upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Skip,
+                weightKg = HealthConnectFieldUpdate.Write(null),
+            )
+
+            val row = dao.findByDate(date)
+            assertNull(row)
         }
 
     @Test
@@ -113,9 +205,8 @@ class DailyMetricsDaoTest {
             val date = LocalDate.of(2026, 7, 28)
             dao.upsertHealthConnect(
                 date,
-                stepsHealthConnect = 8_000L,
-                cyclingDistanceKmHealthConnect = 10.0,
-                weightKgHealthConnect = 60.0,
+                steps = HealthConnectFieldUpdate.Write(8_000L),
+                weightKg = HealthConnectFieldUpdate.Write(60.0),
             )
 
             dao.upsertManual(
@@ -128,7 +219,6 @@ class DailyMetricsDaoTest {
 
             val row = dao.observeByDateRange(date, date).first().single()
             assertEquals(8_000L, row.stepsHealthConnect)
-            assertEquals(10.0, row.cyclingDistanceKmHealthConnect)
             assertEquals(60.0, row.weightKgHealthConnect)
             assertEquals(4_000L, row.stepsManual)
         }

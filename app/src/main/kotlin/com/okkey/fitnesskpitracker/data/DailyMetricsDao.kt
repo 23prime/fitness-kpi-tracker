@@ -38,32 +38,32 @@ interface DailyMetricsDao {
     @Transaction
     suspend fun upsertHealthConnect(
         date: LocalDate,
-        stepsHealthConnect: Long?,
-        cyclingDistanceKmHealthConnect: Double?,
-        weightKgHealthConnect: Double?,
+        steps: HealthConnectFieldUpdate<Long>,
+        weightKg: HealthConnectFieldUpdate<Double>,
     ) {
         val existing = findByDate(date)
+        val newSteps = (steps as? HealthConnectFieldUpdate.Write)?.value
+        val newWeightKg = (weightKg as? HealthConnectFieldUpdate.Write)?.value
         if (existing == null) {
+            if (newSteps == null && newWeightKg == null) return
             insert(
                 DailyMetricsEntity(
                     date = date,
-                    stepsHealthConnect = stepsHealthConnect,
+                    stepsHealthConnect = newSteps,
                     stepsManual = null,
-                    cyclingDistanceKmHealthConnect = cyclingDistanceKmHealthConnect,
+                    cyclingDistanceKmHealthConnect = null,
                     cyclingDistanceKmManual = null,
-                    weightKgHealthConnect = weightKgHealthConnect,
+                    weightKgHealthConnect = newWeightKg,
                     weightKgManual = null,
                     workoutSets = null,
                 ),
             )
         } else {
-            update(
-                existing.copy(
-                    stepsHealthConnect = stepsHealthConnect,
-                    cyclingDistanceKmHealthConnect = cyclingDistanceKmHealthConnect,
-                    weightKgHealthConnect = weightKgHealthConnect,
-                ),
-            )
+            if (steps is HealthConnectFieldUpdate.Skip && weightKg is HealthConnectFieldUpdate.Skip) return
+            val nextSteps = if (steps is HealthConnectFieldUpdate.Write) steps.value else existing.stepsHealthConnect
+            val nextWeightKg =
+                if (weightKg is HealthConnectFieldUpdate.Write) weightKg.value else existing.weightKgHealthConnect
+            update(existing.copy(stepsHealthConnect = nextSteps, weightKgHealthConnect = nextWeightKg))
         }
     }
 
