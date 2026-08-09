@@ -14,9 +14,14 @@
 
     <string name="dashboard_title">ダッシュボード</string>
     <string name="dashboard_section_activity">アクティビティスコア</string>
-    <string name="dashboard_activity_chart_description">%1$sの目標達成度 %2$s</string>
+    <string name="dashboard_activity_chart_description">%1$sを末尾とする7日間の目標維持達成度 %2$s</string>
+    <string name="dashboard_activity_chart_no_data_description">%1$sを末尾とする7日間のデータなし</string>
     <string name="dashboard_activity_chart_achieved">目標達成</string>
     <string name="dashboard_activity_history_chart_description">%1$sから%2$sまでの過去7日間のアクティビティスコア推移</string>
+    <string name="dashboard_activity_no_data">データなし</string>
+    <string name="dashboard_activity_rolling_average">7日平均 %1$s pt</string>
+    <string name="dashboard_activity_remaining_score">あと %1$s pt</string>
+    <string name="dashboard_activity_maintained">維持中</string>
     <string name="dashboard_button_previous_day">前日</string>
     <string name="dashboard_button_next_day">翌日</string>
     <string name="dashboard_breakdown_steps_description">歩数 %1$s</string>

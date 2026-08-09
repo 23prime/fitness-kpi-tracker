@@ -74,7 +74,7 @@ class DashboardViewModelTest {
             val state = viewModel.uiState.value
             assertEquals(today, state.date)
             assertEquals(0.0, state.activityScore)
-            assertEquals(0.0, state.activityAchievement)
+            assertNull(state.activityRollingWindow)
             assertNull(state.currentWeightKg)
             assertNull(state.weightProgress)
             assertFalse(state.isWeightOverdue)
@@ -180,7 +180,81 @@ class DashboardViewModelTest {
             assertEquals(10.0, state.cyclingDistanceKm)
             assertEquals(10, state.workoutSets)
             assertEquals(225.0, state.activityScore)
-            assertEquals(1.5, state.activityAchievement)
+            assertEquals(1.5, state.activityRollingWindow?.achievement)
+        }
+
+    @Test
+    fun refresh_selectedDateIsToday_isSelectedDateTodayIsTrue() =
+        runTest {
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.isSelectedDateToday)
+        }
+
+    @Test
+    fun onPreviousDay_selectsPastDate_isSelectedDateTodayIsFalse() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isSelectedDateToday)
+        }
+
+    @Test
+    fun refresh_rollingWindow_belowRequiredScore_remainingScoreIsPositive() =
+        runTest {
+            repository.saveManual(today, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = 20,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            val rollingWindow = state.activityRollingWindow
+            assertEquals(80.0, state.activityScore)
+            assertEquals(200.0, rollingWindow?.requiredScore)
+            assertEquals(80.0 / 200.0, rollingWindow?.achievement)
+            assertEquals(120.0, rollingWindow?.remainingScore)
+        }
+
+    @Test
+    fun refresh_rollingWindow_otherDaysAlreadyMetTarget_remainingScoreIsZeroOrLess() =
+        runTest {
+            repository.saveManual(today, steps = null, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = 60,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val rollingWindow = viewModel.uiState.value.activityRollingWindow
+            assertTrue(rollingWindow != null && rollingWindow.requiredScore <= 0.0)
+            assertEquals(1.0, rollingWindow.achievement)
         }
 
     @Test

@@ -104,4 +104,43 @@ class ActivityScoreTest {
 
         assertEquals(DAILY_SCORE_TARGET, upperBound)
     }
+
+    @Test
+    fun hasRollingWindowData_allNull_isFalse() {
+        assertFalse(hasRollingWindowData(listOf(null, null, null)))
+    }
+
+    @Test
+    fun hasRollingWindowData_someNonNull_isTrue() {
+        assertTrue(hasRollingWindowData(listOf(null, 50.0, null)))
+    }
+
+    @Test
+    fun evaluateRollingWindow_noOtherDays_requiredScoreIsTargetForSelectedDayAlone() {
+        val evaluation = evaluateRollingWindow(otherDaysScores = emptyList(), selectedDateScore = 225.0)
+
+        assertEquals(150.0, evaluation.requiredScore)
+        assertEquals(1.5, evaluation.achievement)
+        assertEquals(225.0, evaluation.averageScore)
+        assertEquals(-75.0, evaluation.remainingScore)
+    }
+
+    @Test
+    fun evaluateRollingWindow_otherDaysBelowTarget_requiredScoreCoversShortfall() {
+        val evaluation =
+            evaluateRollingWindow(otherDaysScores = listOf(125.0, 125.0, 125.0, 125.0), selectedDateScore = 80.0)
+
+        assertEquals(250.0, evaluation.requiredScore)
+        assertEquals(80.0 / 250.0, evaluation.achievement)
+        assertEquals(116.0, evaluation.averageScore)
+        assertEquals(170.0, evaluation.remainingScore)
+    }
+
+    @Test
+    fun evaluateRollingWindow_otherDaysAlreadyAboveTarget_requiredScoreIsZeroOrLessAndAchievementIsFull() {
+        val evaluation = evaluateRollingWindow(otherDaysScores = listOf(900.0, 900.0), selectedDateScore = 0.0)
+
+        assertTrue(evaluation.requiredScore <= 0.0)
+        assertEquals(1.0, evaluation.achievement)
+    }
 }
