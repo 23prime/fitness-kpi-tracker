@@ -44,6 +44,9 @@ android {
         // OldTargetApi compares targetSdk against the highest API level Lint knows about (37),
         // regardless of compileSdk. Since Android 17 is still in preview, staying at 36 is intentional.
         disable += "OldTargetApi"
+        // Renovate already tracks Gradle/AGP releases and holds them for minimumReleaseAge, while
+        // this rule errors the moment a version ships, reddening every PR during that window.
+        disable += "AndroidGradlePluginVersion"
     }
 
     testOptions {
