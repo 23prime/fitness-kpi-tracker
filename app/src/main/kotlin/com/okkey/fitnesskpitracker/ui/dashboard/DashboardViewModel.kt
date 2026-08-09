@@ -8,12 +8,14 @@ import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.HealthConnectGateway
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
+import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScore
 import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
-import com.okkey.fitnesskpitracker.domain.dailyScoreAchievement
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
+import com.okkey.fitnesskpitracker.domain.evaluateRollingWindow
+import com.okkey.fitnesskpitracker.domain.hasRollingWindowData
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.CancellationException
@@ -34,8 +36,9 @@ data class DashboardUiState(
     val cyclingDistanceKm: Double? = null,
     val workoutSets: Int? = null,
     val activityScore: Double = 0.0,
-    val activityAchievement: Double = 0.0,
     val activityScoreHistory: List<DailyActivityScorePoint> = emptyList(),
+    val activityRollingWindow: RollingWindowEvaluation? = null,
+    val isSelectedDateToday: Boolean = false,
     val canGoToPreviousDay: Boolean = false,
     val canGoToNextDay: Boolean = false,
     val currentWeightKg: Double? = null,
@@ -139,6 +142,13 @@ class DashboardViewModel(
             activityScore(activityValues.steps, activityValues.cyclingDistanceKm, activityValues.workoutSets)
         val activityScoreHistory =
             repository.findActivityScoreRange(activityScoreHistoryWindowStart(date), date)
+        val rollingWindow =
+            if (hasRollingWindowData(activityScoreHistory.map { it.score })) {
+                val otherDaysScores = activityScoreHistory.mapNotNull { if (it.date == date) null else it.score }
+                evaluateRollingWindow(otherDaysScores, score)
+            } else {
+                null
+            }
         val earliestDate = repository.findEarliestDate() ?: date
         val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
         val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
@@ -153,8 +163,9 @@ class DashboardViewModel(
                 cyclingDistanceKm = activityValues.cyclingDistanceKm,
                 workoutSets = activityValues.workoutSets,
                 activityScore = score,
-                activityAchievement = dailyScoreAchievement(score),
                 activityScoreHistory = activityScoreHistory,
+                activityRollingWindow = rollingWindow,
+                isSelectedDateToday = date == todayDate,
                 canGoToPreviousDay = date > earliestDate,
                 canGoToNextDay = date < todayDate,
                 currentWeightKg = currentWeightKg,

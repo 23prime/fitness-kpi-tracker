@@ -1,7 +1,5 @@
 package com.okkey.fitnesskpitracker.ui.dashboard
 
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -38,17 +36,13 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.okkey.fitnesskpitracker.R
 import com.okkey.fitnesskpitracker.data.DailyActivityScorePoint
-import com.okkey.fitnesskpitracker.domain.CYCLING_KM_COEFFICIENT
-import com.okkey.fitnesskpitracker.domain.DAILY_SCORE_TARGET
-import com.okkey.fitnesskpitracker.domain.STEPS_COEFFICIENT
-import com.okkey.fitnesskpitracker.domain.WORKOUT_SET_COEFFICIENT
+import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.activityScoreArcSweepDegrees
 import com.okkey.fitnesskpitracker.domain.isActivityScoreAchieved
 import java.time.LocalDate
@@ -60,8 +54,6 @@ private const val DONUT_START_ANGLE_DEGREES = -90f
 private val DONUT_SIZE = 160.dp
 private val DONUT_STROKE_WIDTH = 16.dp
 private val SWIPE_THRESHOLD = 96.dp
-private val BREAKDOWN_ICON_SIZE = 20.dp
-private val BREAKDOWN_ICON_SPACING = 8.dp
 private const val DATE_SWITCH_ANIMATION_DURATION_MS = 300
 
 @Composable
@@ -141,7 +133,7 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
                 ActivityScoreDonutChart(
                     date = snapshot.date,
                     score = snapshot.activityScore,
-                    achievement = snapshot.activityAchievement,
+                    rollingWindow = snapshot.activityRollingWindow,
                 )
                 ActivityScoreBreakdown(
                     steps = snapshot.steps,
@@ -150,6 +142,10 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
                 )
             }
             ActivityScoreHistoryChart(history = snapshot.activityScoreHistory)
+            RollingWindowSummary(
+                rollingWindow = snapshot.activityRollingWindow,
+                isSelectedDateToday = snapshot.isSelectedDateToday,
+            )
         }
     }
 }
@@ -163,7 +159,8 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
 private data class ActivityScoreSnapshot(
     val date: LocalDate,
     val activityScore: Double,
-    val activityAchievement: Double,
+    val activityRollingWindow: RollingWindowEvaluation?,
+    val isSelectedDateToday: Boolean,
     val activityScoreHistory: List<DailyActivityScorePoint>,
     val steps: Long?,
     val cyclingDistanceKm: Double?,
@@ -172,7 +169,8 @@ private data class ActivityScoreSnapshot(
     constructor(uiState: DashboardUiState) : this(
         date = uiState.date,
         activityScore = uiState.activityScore,
-        activityAchievement = uiState.activityAchievement,
+        activityRollingWindow = uiState.activityRollingWindow,
+        isSelectedDateToday = uiState.isSelectedDateToday,
         activityScoreHistory = uiState.activityScoreHistory,
         steps = uiState.steps,
         cyclingDistanceKm = uiState.cyclingDistanceKm,
@@ -210,70 +208,26 @@ private fun DateSwitcherRow(
 }
 
 @Composable
-private fun ActivityScoreBreakdown(
-    steps: Long?,
-    cyclingDistanceKm: Double?,
-    workoutSets: Int?,
-) {
-    val stepsValue = steps ?: 0L
-    val cyclingValue = cyclingDistanceKm ?: 0.0
-    val workoutSetsValue = workoutSets ?: 0
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        BreakdownRow(
-            iconRes = R.drawable.ic_directions_walk,
-            text = formatBreakdown("%,d 歩", stepsValue, stepsValue * STEPS_COEFFICIENT),
-            descriptionRes = R.string.dashboard_breakdown_steps_description,
-        )
-        BreakdownRow(
-            iconRes = R.drawable.ic_directions_bike,
-            text = formatBreakdown("%.1f km", cyclingValue, cyclingValue * CYCLING_KM_COEFFICIENT),
-            descriptionRes = R.string.dashboard_breakdown_cycling_description,
-        )
-        BreakdownRow(
-            iconRes = R.drawable.ic_fitness_center,
-            text = formatBreakdown("%d セット", workoutSetsValue, workoutSetsValue * WORKOUT_SET_COEFFICIENT),
-            descriptionRes = R.string.dashboard_breakdown_workout_description,
-        )
-    }
-}
-
-@Composable
-private fun BreakdownRow(
-    @DrawableRes iconRes: Int,
-    text: String,
-    @StringRes descriptionRes: Int,
-) {
-    val description = stringResource(descriptionRes, text)
-    Row(
-        modifier =
-            Modifier.semantics(mergeDescendants = true) {
-                contentDescription = description
-            },
-        horizontalArrangement = Arrangement.spacedBy(BREAKDOWN_ICON_SPACING),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(BREAKDOWN_ICON_SIZE),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(text, style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
 private fun ActivityScoreDonutChart(
     date: LocalDate,
     score: Double,
-    achievement: Double,
+    rollingWindow: RollingWindowEvaluation?,
 ) {
-    val achieved = isActivityScoreAchieved(achievement)
+    if (rollingWindow == null) {
+        ActivityScoreDonutNoData(date = date)
+        return
+    }
+    val achieved = isActivityScoreAchieved(rollingWindow.achievement)
     val arcColor = if (achieved) Color(COLOR_ACHIEVED) else MaterialTheme.colorScheme.primary
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
-    val sweepAngle = activityScoreArcSweepDegrees(achievement)
-    val percentText = formatPercent(achievement)
-    val scoreText = "${formatNumber(score)} / ${formatNumber(DAILY_SCORE_TARGET)} pt"
+    val sweepAngle = activityScoreArcSweepDegrees(rollingWindow.achievement)
+    val percentText = formatPercent(rollingWindow.achievement)
+    val scoreText =
+        if (rollingWindow.requiredScore <= 0.0) {
+            stringResource(R.string.dashboard_activity_maintained)
+        } else {
+            "${formatNumber(score)} / ${formatNumber(rollingWindow.requiredScore)} pt"
+        }
     val chartDescription =
         stringResource(
             R.string.dashboard_activity_chart_description,
@@ -290,6 +244,25 @@ private fun ActivityScoreDonutChart(
     ) {
         DonutArcs(trackColor = trackColor, arcColor = arcColor, sweepAngle = sweepAngle)
         DonutCenterLabel(percentText = percentText, scoreText = scoreText, achieved = achieved, arcColor = arcColor)
+    }
+}
+
+@Composable
+private fun ActivityScoreDonutNoData(date: LocalDate) {
+    val trackColor = MaterialTheme.colorScheme.surfaceVariant
+    val noDataText = stringResource(R.string.dashboard_activity_no_data)
+    val chartDescription =
+        stringResource(R.string.dashboard_activity_chart_no_data_description, date.format(DATE_DISPLAY_FORMATTER))
+
+    Box(
+        modifier =
+            Modifier
+                .size(DONUT_SIZE)
+                .semantics(mergeDescendants = true) { contentDescription = chartDescription },
+        contentAlignment = Alignment.Center,
+    ) {
+        DonutArcs(trackColor = trackColor, arcColor = trackColor, sweepAngle = 0f)
+        Text(noDataText, style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -348,10 +321,4 @@ private fun DonutCenterLabel(
     }
 }
 
-private fun formatNumber(value: Double): String = String.format(Locale.ROOT, "%.1f", value)
-
-private fun formatBreakdown(
-    valueFormat: String,
-    value: Number,
-    points: Double,
-): String = String.format(Locale.ROOT, "$valueFormat（%.1f pt）", value, points)
+internal fun formatNumber(value: Double): String = String.format(Locale.ROOT, "%.1f", value)
