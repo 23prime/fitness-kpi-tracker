@@ -1,6 +1,7 @@
 package com.okkey.fitnesskpitracker.domain
 
 import org.junit.Test
+import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -74,5 +75,33 @@ class ActivityScoreTest {
     @Test
     fun activityScoreArcSweepDegrees_aboveTarget_isCappedAtFullCircle() {
         assertEquals(360f, activityScoreArcSweepDegrees(1.5))
+    }
+
+    @Test
+    fun activityScoreHistoryWindowStart_returnsSixDaysBeforeEndDate() {
+        val start = activityScoreHistoryWindowStart(LocalDate.of(2026, 8, 9))
+
+        assertEquals(LocalDate.of(2026, 8, 3), start)
+    }
+
+    @Test
+    fun activityScoreChartUpperBound_belowTarget_returnsTarget() {
+        val upperBound = activityScoreChartUpperBound(listOf(50.0, 100.0))
+
+        assertEquals(DAILY_SCORE_TARGET, upperBound)
+    }
+
+    @Test
+    fun activityScoreChartUpperBound_aboveTarget_returnsMaxScore() {
+        val upperBound = activityScoreChartUpperBound(listOf(50.0, 200.0))
+
+        assertEquals(200.0, upperBound)
+    }
+
+    @Test
+    fun activityScoreChartUpperBound_emptyList_returnsTarget() {
+        val upperBound = activityScoreChartUpperBound(emptyList())
+
+        assertEquals(DAILY_SCORE_TARGET, upperBound)
     }
 }

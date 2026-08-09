@@ -269,6 +269,59 @@ class MetricsRepositoryTest {
         }
 
     @Test
+    fun findActivityScoreRange_noRecords_returnsAllNullScores() =
+        runTest {
+            val result =
+                repository.findActivityScoreRange(LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 3))
+
+            assertEquals(
+                listOf(
+                    DailyActivityScorePoint(LocalDate.of(2026, 8, 1), null),
+                    DailyActivityScorePoint(LocalDate.of(2026, 8, 2), null),
+                    DailyActivityScorePoint(LocalDate.of(2026, 8, 3), null),
+                ),
+                result,
+            )
+        }
+
+    @Test
+    fun findActivityScoreRange_recordedDay_returnsComputedScore() =
+        runTest {
+            val date = LocalDate.of(2026, 8, 2)
+            repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+
+            val result = repository.findActivityScoreRange(date, date)
+
+            assertEquals(listOf(DailyActivityScorePoint(date, 80.0)), result)
+        }
+
+    @Test
+    fun findActivityScoreRange_rowWithOnlyWeight_treatsAsNoData() =
+        runTest {
+            val date = LocalDate.of(2026, 8, 2)
+            repository.saveManual(date, steps = null, cyclingDistanceKm = null, weightKg = 59.5, workoutSets = null)
+
+            val result = repository.findActivityScoreRange(date, date)
+
+            assertEquals(listOf(DailyActivityScorePoint(date, null)), result)
+        }
+
+    @Test
+    fun findActivityScoreRange_healthConnectZeroSteps_returnsZeroScoreNotNull() =
+        runTest {
+            val date = LocalDate.of(2026, 8, 2)
+            database.dailyMetricsDao().upsertHealthConnect(
+                date,
+                steps = HealthConnectFieldUpdate.Write(0L),
+                weightKg = HealthConnectFieldUpdate.Skip,
+            )
+
+            val result = repository.findActivityScoreRange(date, date)
+
+            assertEquals(listOf(DailyActivityScorePoint(date, 0.0)), result)
+        }
+
+    @Test
     fun syncHealthConnect_partialPermission_onlyUpdatesGrantedField() =
         runTest {
             val today = LocalDate.of(2026, 7, 28)

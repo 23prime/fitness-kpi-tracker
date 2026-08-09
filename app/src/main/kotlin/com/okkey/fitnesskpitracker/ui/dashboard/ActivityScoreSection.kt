@@ -44,6 +44,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.okkey.fitnesskpitracker.R
+import com.okkey.fitnesskpitracker.data.DailyActivityScorePoint
 import com.okkey.fitnesskpitracker.domain.CYCLING_KM_COEFFICIENT
 import com.okkey.fitnesskpitracker.domain.DAILY_SCORE_TARGET
 import com.okkey.fitnesskpitracker.domain.STEPS_COEFFICIENT
@@ -53,7 +54,7 @@ import com.okkey.fitnesskpitracker.domain.isActivityScoreAchieved
 import java.time.LocalDate
 import java.util.Locale
 
-private const val COLOR_ACHIEVED = 0xFF81C784L
+internal const val COLOR_ACHIEVED = 0xFF81C784L
 private const val DONUT_TRACK_SWEEP_DEGREES = 360f
 private const val DONUT_START_ANGLE_DEGREES = -90f
 private val DONUT_SIZE = 160.dp
@@ -128,21 +129,27 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
             }
         },
     ) { snapshot ->
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            ActivityScoreDonutChart(
-                date = snapshot.date,
-                score = snapshot.activityScore,
-                achievement = snapshot.activityAchievement,
-            )
-            ActivityScoreBreakdown(
-                steps = snapshot.steps,
-                cyclingDistanceKm = snapshot.cyclingDistanceKm,
-                workoutSets = snapshot.workoutSets,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ActivityScoreDonutChart(
+                    date = snapshot.date,
+                    score = snapshot.activityScore,
+                    achievement = snapshot.activityAchievement,
+                )
+                ActivityScoreBreakdown(
+                    steps = snapshot.steps,
+                    cyclingDistanceKm = snapshot.cyclingDistanceKm,
+                    workoutSets = snapshot.workoutSets,
+                )
+            }
+            ActivityScoreHistoryChart(history = snapshot.activityScoreHistory)
         }
     }
 }
@@ -157,6 +164,7 @@ private data class ActivityScoreSnapshot(
     val date: LocalDate,
     val activityScore: Double,
     val activityAchievement: Double,
+    val activityScoreHistory: List<DailyActivityScorePoint>,
     val steps: Long?,
     val cyclingDistanceKm: Double?,
     val workoutSets: Int?,
@@ -165,6 +173,7 @@ private data class ActivityScoreSnapshot(
         date = uiState.date,
         activityScore = uiState.activityScore,
         activityAchievement = uiState.activityAchievement,
+        activityScoreHistory = uiState.activityScoreHistory,
         steps = uiState.steps,
         cyclingDistanceKm = uiState.cyclingDistanceKm,
         workoutSets = uiState.workoutSets,
