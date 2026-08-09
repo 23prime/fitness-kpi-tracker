@@ -32,6 +32,8 @@ Run these via `mise run <task>` (or `./gradlew <task>` directly once `mise run s
 
 detekt's `MagicNumber` rule flags any inline numeric literal, not just dates — e.g. `LocalDate.of(2026, 9, 30)` or a Compose `Color(0xFF9ECAFF)`. Extract a named `private const val` for each literal instead (for dates, prefer `LocalDate.parse("2026-09-30")` over `LocalDate.of(2026, 9, 30)`) to avoid `mise run android-check`/pre-commit failures.
 
+detekt's `TooManyFunctions` rule caps a file at 10 functions (the default threshold is 11, so a file with 11 already fails). When adding new composables/functions to a file that's already close to this size, split the new ones into a separate file proactively instead of discovering the failure after committing.
+
 ## Kotlin Coroutines
 
 - `runCatching` also catches `CancellationException`, which breaks structured concurrency if swallowed. When wrapping a `suspend` call, rethrow it from `onFailure`/`getOrElse`: `.onFailure { if (it is CancellationException) throw it }`.
