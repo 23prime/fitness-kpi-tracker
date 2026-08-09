@@ -41,6 +41,7 @@ Run `android-connect` once, then ask. Do not sit in a retry loop — it already 
 ## Gotchas
 
 - **`more than one device/emulator`.** Wireless debugging registers the device twice, once as `192.168.x.x:PORT` and once as `adb-<serial>-XXXX._adb-tls-connect._tcp`. `ANDROID_SERIAL` resolves this by naming the target, so there is no need to disconnect anything. Prefer the mDNS name in `.env`: the IP port changes every time wireless debugging is toggled, the mDNS name does not.
+- **`.env`'s `ANDROID_SERIAL` doesn't match any attached device.** Run `adb devices -l` and check what's actually there before substituting a different serial on the command line. If a `usb:` entry is present, prefer it over a wireless/mDNS one — the user may have just plugged in USB deliberately. Ask before switching to wireless instead of silently picking it; don't assume `.env`'s original wireless config still reflects how the user wants to connect right now.
 - **mise's `.env` beats the caller's environment.** `ANDROID_SERIAL=other mise run android-connect` silently uses the `.env` value. To override, run the script directly: `ANDROID_SERIAL=other ./mise-tasks/android-connect`.
 - **Screenshots come out black.** `adb exec-out screencap -p` returns a blank image on this device. `android-screenshot` writes the file on the device and pulls it instead. Do not reach for `exec-out`.
 - **A black screenshot can also mean the screen is off or locked**, which is not an app bug. Check before concluding anything: `mise run android-status`.

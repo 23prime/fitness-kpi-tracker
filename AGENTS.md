@@ -31,3 +31,8 @@ Run these via `mise run <task>` (or `./gradlew <task>` directly once `mise run s
 - `mise run android-check-full` — `assembleDebug`, `test`, and `lintDebug` (used by pre-push/CI via `mise run check-full`).
 
 detekt's `MagicNumber` rule flags any inline numeric literal, not just dates — e.g. `LocalDate.of(2026, 9, 30)` or a Compose `Color(0xFF9ECAFF)`. Extract a named `private const val` for each literal instead (for dates, prefer `LocalDate.parse("2026-09-30")` over `LocalDate.of(2026, 9, 30)`) to avoid `mise run android-check`/pre-commit failures.
+
+## Kotlin Coroutines
+
+- `runCatching` also catches `CancellationException`, which breaks structured concurrency if swallowed. When wrapping a `suspend` call, rethrow it from `onFailure`/`getOrElse`: `.onFailure { if (it is CancellationException) throw it }`.
+- `kotlin.Result.map` does not catch exceptions thrown by its transform lambda — only `mapCatching` does. Use `mapCatching` whenever the transform itself can throw.
