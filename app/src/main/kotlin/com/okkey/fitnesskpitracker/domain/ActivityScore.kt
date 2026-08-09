@@ -7,6 +7,8 @@ private const val MAX_ACHIEVEMENT = 1.0
 private const val FULL_CIRCLE_DEGREES = 360.0
 private const val HISTORY_WINDOW_DAYS = 7L
 
+const val ROLLING_WINDOW_TOTAL_SCORE_TARGET = DAILY_SCORE_TARGET * HISTORY_WINDOW_DAYS
+
 fun activityScore(
     steps: Long?,
     cyclingDistanceKm: Double?,
@@ -37,6 +39,7 @@ data class RollingWindowEvaluation(
     val achievement: Double,
     val averageScore: Double,
     val remainingScore: Double,
+    val totalScore: Double,
 )
 
 fun hasRollingWindowData(scores: List<Double?>): Boolean = scores.any { it != null }
@@ -50,9 +53,10 @@ fun evaluateRollingWindow(
 ): RollingWindowEvaluation {
     val dataDaysCount = otherDaysScores.size + 1
     val otherDaysScoreSum = otherDaysScores.sum()
+    val totalScore = otherDaysScoreSum + selectedDateScore
     val requiredScore = DAILY_SCORE_TARGET * dataDaysCount - otherDaysScoreSum
     val achievement = if (requiredScore <= 0.0) MAX_ACHIEVEMENT else selectedDateScore / requiredScore
-    val averageScore = (otherDaysScoreSum + selectedDateScore) / dataDaysCount
+    val averageScore = totalScore / dataDaysCount
     val remainingScore = requiredScore - selectedDateScore
-    return RollingWindowEvaluation(requiredScore, achievement, averageScore, remainingScore)
+    return RollingWindowEvaluation(requiredScore, achievement, averageScore, remainingScore, totalScore)
 }

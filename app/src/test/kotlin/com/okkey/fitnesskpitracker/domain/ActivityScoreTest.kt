@@ -123,6 +123,7 @@ class ActivityScoreTest {
         assertEquals(1.5, evaluation.achievement)
         assertEquals(225.0, evaluation.averageScore)
         assertEquals(-75.0, evaluation.remainingScore)
+        assertEquals(225.0, evaluation.totalScore)
     }
 
     @Test
@@ -134,6 +135,7 @@ class ActivityScoreTest {
         assertEquals(80.0 / 250.0, evaluation.achievement)
         assertEquals(116.0, evaluation.averageScore)
         assertEquals(170.0, evaluation.remainingScore)
+        assertEquals(580.0, evaluation.totalScore)
     }
 
     @Test
@@ -142,5 +144,11 @@ class ActivityScoreTest {
 
         assertTrue(evaluation.requiredScore <= 0.0)
         assertEquals(1.0, evaluation.achievement)
+        assertEquals(1_800.0, evaluation.totalScore)
+    }
+
+    @Test
+    fun rollingWindowTotalScoreTarget_equalsDailyTargetTimesSevenDays() {
+        assertEquals(1_050.0, ROLLING_WINDOW_TOTAL_SCORE_TARGET)
     }
 }

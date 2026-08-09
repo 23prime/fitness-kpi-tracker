@@ -11,6 +11,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.okkey.fitnesskpitracker.R
+import com.okkey.fitnesskpitracker.domain.ROLLING_WINDOW_TOTAL_SCORE_TARGET
 import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.isActivityScoreAchieved
 
@@ -27,6 +28,12 @@ internal fun RollingWindowSummary(
     }
     val averageText =
         stringResource(R.string.dashboard_activity_rolling_average, formatNumber(rollingWindow.averageScore))
+    val totalText =
+        stringResource(
+            R.string.dashboard_activity_rolling_total,
+            formatNumber(rollingWindow.totalScore),
+            formatNumber(ROLLING_WINDOW_TOTAL_SCORE_TARGET),
+        )
     val remainingText =
         if (!isSelectedDateToday) {
             null
@@ -35,12 +42,13 @@ internal fun RollingWindowSummary(
         } else {
             stringResource(R.string.dashboard_activity_remaining_score, formatNumber(rollingWindow.remainingScore))
         }
-    val description = remainingText?.let { "$averageText $it" } ?: averageText
+    val description = remainingText?.let { "$averageText $totalText $it" } ?: "$averageText $totalText"
     Row(
         modifier = Modifier.semantics(mergeDescendants = true) { contentDescription = description },
         horizontalArrangement = Arrangement.spacedBy(ROLLING_WINDOW_SUMMARY_SPACING),
     ) {
         Text(averageText, style = MaterialTheme.typography.bodyMedium)
+        Text(totalText, style = MaterialTheme.typography.bodyMedium)
         remainingText?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
 }

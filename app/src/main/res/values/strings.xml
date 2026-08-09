@@ -20,6 +20,7 @@
     <string name="dashboard_activity_history_chart_description">%1$sから%2$sまでの過去7日間のアクティビティスコア推移</string>
     <string name="dashboard_activity_no_data">データなし</string>
     <string name="dashboard_activity_rolling_average">7日平均 %1$s pt</string>
+    <string name="dashboard_activity_rolling_total">合計 %1$s / %2$s pt</string>
     <string name="dashboard_activity_remaining_score">あと %1$s pt</string>
     <string name="dashboard_activity_maintained">維持中</string>
     <string name="dashboard_button_previous_day">前日</string>
