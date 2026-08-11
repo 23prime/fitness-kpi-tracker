@@ -18,14 +18,18 @@ Room のデータベースは Android Auto Backup で自動的にバックアッ
 2. `.db` のみを単体で取り出し、`-wal` / `-shm` を伴わずに開いて、その 1 件が入っていないことを確認する。これによりそのデータが `-wal` にしか存在しない状態だと確定させる。
 
    ```bash
+   rm -f /tmp/wal-only-check.db /tmp/wal-only-check.db-wal /tmp/wal-only-check.db-shm
    adb exec-out run-as com.okkey.fitnesskpitracker cat databases/fitness-kpi-tracker.db > /tmp/wal-only-check.db
-   ls /tmp/wal-only-check.db-wal /tmp/wal-only-check.db-shm 2>&1  # No such file であること（sidecar なしを確認）
-   sqlite3 /tmp/wal-only-check.db "SELECT ...;"  # 書き込んだ 1 件が入っていないこと
+   test ! -e /tmp/wal-only-check.db-wal && test ! -e /tmp/wal-only-check.db-shm  # sidecar が存在しないこと
+   sqlite3 /tmp/wal-only-check.db "SELECT date FROM daily_metrics WHERE date = '<書き込んだ日付>';"  # 何も返らないこと
    ```
 
 3. バックアップの転送先をローカル転送（`com.android.localtransport/.LocalTransport`）に切り替え、バックアップを取る。
 
    ```bash
+   adb shell bmgr enable true
+   adb shell bmgr transport com.android.localtransport/.LocalTransport
+   adb shell bmgr list transports  # com.android.localtransport/.LocalTransport に * が付くこと
    adb shell bmgr backupnow com.okkey.fitnesskpitracker
    # Package com.okkey.fitnesskpitracker with result: Success と出力されること
    ```
@@ -34,9 +38,14 @@ Room のデータベースは Android Auto Backup で自動的にバックアッ
 5. 復元後、`.db` を取り出してその 1 件が存在することを確認する。
 
    ```bash
-   adb exec-out run-as com.okkey.fitnesskpitracker cat databases/fitness-kpi-tracker.db > /tmp/restored.db
-   sqlite3 /tmp/restored.db "SELECT ...;"  # 書き込んだ 1 件が存在すること
+   rm -f /tmp/restored.db /tmp/restored.db-wal /tmp/restored.db-shm
+   for suffix in "" "-wal" "-shm"; do
+     adb exec-out run-as com.okkey.fitnesskpitracker cat "databases/fitness-kpi-tracker.db${suffix}" > "/tmp/restored.db${suffix}"
+   done
+   sqlite3 /tmp/restored.db "SELECT date FROM daily_metrics WHERE date = '<書き込んだ日付>';"  # 書き込んだ日付が返ること
    ```
+
+   `.db` を単体でコピーすると `-wal` に残っている行を見落とすため、`-wal` / `-shm` も揃えて取得する。
 
 取りこぼしは発生せず、`RoomDatabase` のジャーナルモードを `TRUNCATE` に変更する対処は不要だった。
 
