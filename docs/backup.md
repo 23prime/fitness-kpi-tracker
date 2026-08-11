@@ -1,0 +1,45 @@
+# バックアップと復元
+
+Room のデータベースは Android Auto Backup で自動的にバックアップされる。手順と制約、実機検証の結果をまとめる。
+
+## 対象ファイル
+
+`app/src/main/res/xml/data_extraction_rules.xml` の `<include domain="database" path="." />` により、`app/databases/` ディレクトリ全体がバックアップ対象になる。Room は WAL モードで動作するため、対象には `.db` 本体だけでなく `-wal`（未チェックポイントの書き込み）も含まれる。
+
+要件定義書はかつて `backup_rules.xml` での設定を前提としていたが、これは誤りだった。minSdk 34 では `android:fullBackupContent`（`backup_rules.xml`）は参照されず、`android:dataExtractionRules`（`data_extraction_rules.xml`）のみが有効である。リポジトリに `backup_rules.xml` は存在しない。
+
+`-shm` は `-wal` を読むための索引で、SQLite が `-wal` から再生成できる一時ファイルである。バックアップに含まれていても害はないが、復元後に存在しなくても支障はない。
+
+## 実機検証の結果
+
+以下の手順で、`-wal` の未チェックポイント分がバックアップ・復元を経ても失われないことを実機（Pixel 8a、Android 14 以降）で確認済み。
+
+1. データを 1 件書き込む。
+2. `.db` を単体で（`-wal` / `-shm` を伴わずに）開き、その 1 件が入っていないことを確認する。これによりそのデータが `-wal` にしか存在しない状態だと確定させる。
+3. バックアップの転送先をローカル転送（`com.android.localtransport/.LocalTransport`）に切り替え、`bmgr backupnow <package>` でバックアップを取る。
+4. アプリをアンインストールし、再インストールする。
+5. 復元後にその 1 件が存在することを確認する。
+
+取りこぼしは発生せず、`RoomDatabase` のジャーナルモードを `TRUNCATE` に変更する対処は不要だった。
+
+ローカル転送での検証を本体とし、実運用で使う Google のクラウド転送は「同じ `data_extraction_rules.xml` が参照されること」の補助確認にとどめた。クラウド転送はアップロードのタイミングが端末やサーバーの状態に左右され、成否が決定的でないため受け入れ基準には含めていない。
+
+### バックアップの転送先を切り替える
+
+```bash
+adb shell bmgr list transports
+adb shell bmgr transport com.android.localtransport/.LocalTransport
+adb shell bmgr backupnow <package>
+```
+
+検証後は必ず Google のクラウド転送に戻す。
+
+```bash
+adb shell bmgr transport com.google.android.gms/.backup.BackupTransportService
+```
+
+## 運用上の制約
+
+- Auto Backup はプラットフォーム依存の動作である。「充電中 + Wi-Fi + アイドル時に 24 時間に 1 回」は保証されたスケジュールではなく典型的な発生条件にすぎない。バックアップの有効化はユーザー側で必要で、モバイル通信でのバックアップを許可していない限り Wi-Fi 接続が前提になる。
+- 復元はアプリの新規インストール時のみ行われる。既存インストールへの後からの復元はできない。
+- 任意タイミングでの手動エクスポート／インポートやクラウド同期はスコープ外。

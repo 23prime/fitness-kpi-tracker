@@ -25,6 +25,8 @@ pidof
 pipefail
 mdns
 bmgr
+localtransport
+backupnow
 kotlinx
 pulltorefresh
 automirrored
