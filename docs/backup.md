@@ -4,7 +4,7 @@ Room のデータベースは Android Auto Backup で自動的にバックアッ
 
 ## 対象ファイル
 
-`app/src/main/res/xml/data_extraction_rules.xml` の `<include domain="database" path="." />` により、`app/databases/` ディレクトリ全体がバックアップ対象になる。Room は WAL モードで動作するため、対象には `.db` 本体だけでなく `-wal`（未チェックポイントの書き込み）も含まれる。
+`app/src/main/res/xml/data_extraction_rules.xml` の `<include domain="database" path="." />` により、バックアップ対象になる。`domain="database"` はリポジトリ上のパスではなく、`getDatabasePath()` が返す実行時のアプリ専用ディレクトリ（`fitness-kpi-tracker.db` が置かれる `databases/`）を指す。Room は WAL モードで動作するため、対象には `.db` 本体だけでなく `-wal`（未チェックポイントの書き込み）も含まれる。
 
 要件定義書はかつて `backup_rules.xml` での設定を前提としていたが、これは誤りだった。minSdk 34 では `android:fullBackupContent`（`backup_rules.xml`）は参照されず、`android:dataExtractionRules`（`data_extraction_rules.xml`）のみが有効である。リポジトリに `backup_rules.xml` は存在しない。
 
@@ -15,10 +15,28 @@ Room のデータベースは Android Auto Backup で自動的にバックアッ
 以下の手順で、`-wal` の未チェックポイント分がバックアップ・復元を経ても失われないことを実機（Pixel 8a、Android 14 以降）で確認済み。
 
 1. データを 1 件書き込む。
-2. `.db` を単体で（`-wal` / `-shm` を伴わずに）開き、その 1 件が入っていないことを確認する。これによりそのデータが `-wal` にしか存在しない状態だと確定させる。
-3. バックアップの転送先をローカル転送（`com.android.localtransport/.LocalTransport`）に切り替え、`bmgr backupnow <package>` でバックアップを取る。
+2. `.db` のみを単体で取り出し、`-wal` / `-shm` を伴わずに開いて、その 1 件が入っていないことを確認する。これによりそのデータが `-wal` にしか存在しない状態だと確定させる。
+
+   ```bash
+   adb exec-out run-as com.okkey.fitnesskpitracker cat databases/fitness-kpi-tracker.db > /tmp/wal-only-check.db
+   ls /tmp/wal-only-check.db-wal /tmp/wal-only-check.db-shm 2>&1  # No such file であること（sidecar なしを確認）
+   sqlite3 /tmp/wal-only-check.db "SELECT ...;"  # 書き込んだ 1 件が入っていないこと
+   ```
+
+3. バックアップの転送先をローカル転送（`com.android.localtransport/.LocalTransport`）に切り替え、バックアップを取る。
+
+   ```bash
+   adb shell bmgr backupnow com.okkey.fitnesskpitracker
+   # Package com.okkey.fitnesskpitracker with result: Success と出力されること
+   ```
+
 4. アプリをアンインストールし、再インストールする。
-5. 復元後にその 1 件が存在することを確認する。
+5. 復元後、`.db` を取り出してその 1 件が存在することを確認する。
+
+   ```bash
+   adb exec-out run-as com.okkey.fitnesskpitracker cat databases/fitness-kpi-tracker.db > /tmp/restored.db
+   sqlite3 /tmp/restored.db "SELECT ...;"  # 書き込んだ 1 件が存在すること
+   ```
 
 取りこぼしは発生せず、`RoomDatabase` のジャーナルモードを `TRUNCATE` に変更する対処は不要だった。
 
