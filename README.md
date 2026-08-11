@@ -8,6 +8,10 @@
 
 debug ビルドを実機にインストールする手順は [docs/running-on-device.md](docs/running-on-device.md) を参照。
 
+## バックアップ
+
+Android Auto Backup によるバックアップと復元の手順・制約は [docs/backup.md](docs/backup.md) を参照。
+
 ## Contributing
 
 開発への貢献方法は [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) を参照。

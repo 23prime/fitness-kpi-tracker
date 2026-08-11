@@ -11,6 +11,11 @@ This file provides guidance to AI coding agents when working with code in this r
 - Always use `rm -f` (never bare `rm`)
 - Before running a series of `git` commands, confirm you are in the project root; if not, `cd` there first. Then run all subsequent `git` commands from that directory without the `-C` option.
 
+### On-device Data Safety
+
+- 実機上のアプリ専用ストレージ(`run-as` 経由の DB ファイルなど)を adb で直接削除・上書きする際、書き込みが失敗・不完全なまま先に進めてはならない(対象ファイルが欠落・不完全な状態でアプリを起動しない)。失敗したら一旦停止して状況を再評価する。
+- 実データの復元は、ファイルレベルの直接操作よりも、アプリ自体の Auto Backup 復元経路(既知のバックアップがある transport に対してアンインストール→再インストール)やアプリの UI を優先する。
+
 ## Project Overview
 
 自分専用の活動量・体重トラッキング用 Android アプリ。詳細は [README.md](README.md) および [docs/requirements.md](docs/requirements.md) を参照。
