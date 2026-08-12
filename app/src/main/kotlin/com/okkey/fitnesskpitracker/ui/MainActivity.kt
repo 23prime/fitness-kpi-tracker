@@ -28,6 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.okkey.fitnesskpitracker.FitnessKpiApplication
 import com.okkey.fitnesskpitracker.R
 import com.okkey.fitnesskpitracker.data.HealthConnectGateway
+import com.okkey.fitnesskpitracker.data.MetricsCsvRepository
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.ui.dashboard.DashboardScreen
 import com.okkey.fitnesskpitracker.ui.dashboard.DashboardViewModelFactory
@@ -49,11 +50,12 @@ class MainActivity : ComponentActivity() {
         )
         val application = application as FitnessKpiApplication
         val repository = application.metricsRepository
+        val csvRepository = application.metricsCsvRepository
         val healthConnectGateway = application.healthConnectGateway
         setContent {
             FitnessKpiTheme {
                 Surface {
-                    FitnessKpiApp(repository, healthConnectGateway)
+                    FitnessKpiApp(repository, csvRepository, healthConnectGateway)
                 }
             }
         }
@@ -63,6 +65,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun FitnessKpiApp(
     repository: MetricsRepository,
+    csvRepository: MetricsCsvRepository,
     healthConnectGateway: HealthConnectGateway,
 ) {
     var selectedScreen by rememberSaveable { mutableStateOf(AppScreen.DASHBOARD) }
@@ -79,7 +82,7 @@ private fun FitnessKpiApp(
                 }
 
                 AppScreen.SETTINGS -> {
-                    SettingsScreen(viewModel(factory = SettingsViewModelFactory(repository)))
+                    SettingsScreen(viewModel(factory = SettingsViewModelFactory(csvRepository)))
                 }
             }
         }

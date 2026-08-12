@@ -2,10 +2,10 @@ package com.okkey.fitnesskpitracker.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.okkey.fitnesskpitracker.data.MetricsRepository
+import com.okkey.fitnesskpitracker.data.MetricsCsvRepository
 
 class SettingsViewModelFactory(
-    private val repository: MetricsRepository,
+    private val repository: MetricsCsvRepository,
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {

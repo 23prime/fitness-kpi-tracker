@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.okkey.fitnesskpitracker.data.AppDatabase
 import com.okkey.fitnesskpitracker.data.HealthConnectGateway
 import com.okkey.fitnesskpitracker.data.HealthConnectGatewayImpl
+import com.okkey.fitnesskpitracker.data.MetricsCsvRepository
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 
 class FitnessKpiApplication : Application() {
@@ -14,6 +15,10 @@ class FitnessKpiApplication : Application() {
 
     val metricsRepository: MetricsRepository by lazy {
         MetricsRepository(database.dailyMetricsDao())
+    }
+
+    val metricsCsvRepository: MetricsCsvRepository by lazy {
+        MetricsCsvRepository(database.dailyMetricsCsvDao())
     }
 
     val healthConnectGateway: HealthConnectGateway by lazy {

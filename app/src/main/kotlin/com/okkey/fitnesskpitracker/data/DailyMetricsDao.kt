@@ -22,9 +22,6 @@ interface DailyMetricsDao {
     @Query("SELECT MIN(date) FROM daily_metrics")
     suspend fun findEarliestDate(): LocalDate?
 
-    @Query("SELECT * FROM daily_metrics ORDER BY date")
-    suspend fun findAll(): List<DailyMetricsEntity>
-
     @Query(
         "SELECT * FROM daily_metrics " +
             "WHERE date <= :date AND (weightKgManual IS NOT NULL OR weightKgHealthConnect IS NOT NULL) " +
