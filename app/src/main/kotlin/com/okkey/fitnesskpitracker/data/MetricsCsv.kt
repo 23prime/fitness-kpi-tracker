@@ -63,7 +63,10 @@ object MetricsCsv {
         }
         val columnIndex = columns.associateWith { headerColumns.indexOf(it) }
         val rows =
-            lines.drop(1).mapIndexed { index, line -> (index + 2) to line }.filter { (_, line) -> line.isNotEmpty() }
+            lines
+                .drop(1)
+                .mapIndexed { index, line -> (index + 2) to line.trim() }
+                .filter { (_, line) -> line.isNotEmpty() }
         val seenDates = mutableSetOf<LocalDate>()
         return try {
             val entities =
@@ -94,11 +97,14 @@ object MetricsCsv {
                 parse(it) ?: throw CsvRowParseException(MetricsCsvParseResult.Failure.InvalidNumber(lineNumber))
             }
 
-        fun parseLong(column: String) = parseNumber(column, String::toLongOrNull)
+        fun parseLong(column: String) = parseNumber(column) { it.toLongOrNull()?.takeIf { value -> value >= 0 } }
 
-        fun parseInt(column: String) = parseNumber(column, String::toIntOrNull)
+        fun parseInt(column: String) = parseNumber(column) { it.toIntOrNull()?.takeIf { value -> value >= 0 } }
 
-        fun parseDouble(column: String) = parseNumber(column) { it.toDoubleOrNull()?.takeIf(Double::isFinite) }
+        fun parseDouble(column: String): Double? {
+            fun String.toNonNegativeFiniteDoubleOrNull() = toDoubleOrNull()?.takeIf { it.isFinite() && it >= 0 }
+            return parseNumber(column, String::toNonNegativeFiniteDoubleOrNull)
+        }
 
         val date =
             try {

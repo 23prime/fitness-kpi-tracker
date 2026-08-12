@@ -153,14 +153,30 @@ class MetricsCsvTest {
     }
 
     @Test
-    fun parse_negativeNumber_isAccepted() {
-        val csv = MetricsCsv.HEADER + "\n" + "2026-08-01,,-5,,,,-70.0,"
+    fun parse_negativeLong_returnsInvalidNumber() {
+        val csv = MetricsCsv.HEADER + "\n" + "2026-08-01,,-5,,,,,"
 
         val result = MetricsCsv.parse(csv)
 
-        assertIs<MetricsCsvParseResult.Success>(result)
-        assertEquals(-5L, result.entities.single().stepsManual)
-        assertEquals(-70.0, result.entities.single().weightKgManual)
+        assertIs<MetricsCsvParseResult.Failure.InvalidNumber>(result)
+    }
+
+    @Test
+    fun parse_negativeDouble_returnsInvalidNumber() {
+        val csv = MetricsCsv.HEADER + "\n" + "2026-08-01,,,,,,-70.0,"
+
+        val result = MetricsCsv.parse(csv)
+
+        assertIs<MetricsCsvParseResult.Failure.InvalidNumber>(result)
+    }
+
+    @Test
+    fun parse_negativeInt_returnsInvalidNumber() {
+        val csv = MetricsCsv.HEADER + "\n" + "2026-08-01,,,,,,,-1"
+
+        val result = MetricsCsv.parse(csv)
+
+        assertIs<MetricsCsvParseResult.Failure.InvalidNumber>(result)
     }
 
     @Test

@@ -29,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import com.okkey.fitnesskpitracker.R
 import com.okkey.fitnesskpitracker.data.CsvImportResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -154,8 +156,11 @@ private suspend fun exportCsvTo(
 ): String =
     try {
         val csv = viewModel.exportCsv()
-        val outputStream = context.contentResolver.openOutputStream(uri) ?: throw IOException("null output stream")
-        outputStream.use { it.write(csv.toByteArray()) }
+        withContext(Dispatchers.IO) {
+            val outputStream =
+                context.contentResolver.openOutputStream(uri) ?: throw IOException("null output stream")
+            outputStream.use { it.write(csv.toByteArray()) }
+        }
         messages.exportSuccess
     } catch (e: CancellationException) {
         throw e
@@ -170,8 +175,12 @@ private suspend fun importCsvFrom(
     messages: SettingsMessages,
 ): String =
     try {
-        val inputStream = context.contentResolver.openInputStream(uri) ?: throw IOException("null input stream")
-        val csv = inputStream.use { it.bufferedReader().readText() }
+        val csv =
+            withContext(Dispatchers.IO) {
+                val inputStream =
+                    context.contentResolver.openInputStream(uri) ?: throw IOException("null input stream")
+                inputStream.use { it.bufferedReader().readText() }
+            }
         when (viewModel.importCsv(csv)) {
             is CsvImportResult.Success -> messages.importSuccess
             is CsvImportResult.Failure -> messages.importFailed
