@@ -190,6 +190,16 @@ class MetricsCsvTest {
     }
 
     @Test
+    fun parse_rowWithMoreCellsThanHeader_returnsInvalidNumberWithLineNumber() {
+        val csv = MetricsCsv.HEADER + "\n" + "2026-08-01,8000,,,,,,,extra"
+
+        val result = MetricsCsv.parse(csv)
+
+        assertIs<MetricsCsvParseResult.Failure.InvalidNumber>(result)
+        assertEquals(2, result.lineNumber)
+    }
+
+    @Test
     fun parse_blankLineBeforeInvalidRow_reportsCorrectPhysicalLineNumber() {
         val csv = MetricsCsv.HEADER + "\n" + "\n" + "not-a-date,,,,,,,"
 

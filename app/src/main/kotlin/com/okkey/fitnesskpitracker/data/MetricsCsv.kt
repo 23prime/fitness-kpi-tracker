@@ -77,6 +77,16 @@ object MetricsCsv {
         }
     }
 
+    private fun requireExactCellCount(
+        cells: List<String>,
+        columnIndex: Map<String, Int>,
+        lineNumber: Int,
+    ) {
+        if (cells.size != columnIndex.size) {
+            throw CsvRowParseException(MetricsCsvParseResult.Failure.InvalidNumber(lineNumber))
+        }
+    }
+
     private fun parseRow(
         line: String,
         columnIndex: Map<String, Int>,
@@ -84,6 +94,7 @@ object MetricsCsv {
         seenDates: MutableSet<LocalDate>,
     ): DailyMetricsEntity {
         val cells = line.split(",")
+        requireExactCellCount(cells, columnIndex, lineNumber)
 
         fun cell(column: String): String =
             cells.getOrNull(columnIndex.getValue(column))
