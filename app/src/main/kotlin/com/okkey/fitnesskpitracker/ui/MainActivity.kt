@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -32,10 +33,12 @@ import com.okkey.fitnesskpitracker.ui.dashboard.DashboardScreen
 import com.okkey.fitnesskpitracker.ui.dashboard.DashboardViewModelFactory
 import com.okkey.fitnesskpitracker.ui.entry.EntryScreen
 import com.okkey.fitnesskpitracker.ui.entry.EntryViewModelFactory
+import com.okkey.fitnesskpitracker.ui.settings.SettingsScreen
+import com.okkey.fitnesskpitracker.ui.settings.SettingsViewModelFactory
 import com.okkey.fitnesskpitracker.ui.theme.FitnessKpiTheme
 import android.graphics.Color as AndroidColor
 
-private enum class AppScreen { DASHBOARD, ENTRY }
+private enum class AppScreen { DASHBOARD, ENTRY, SETTINGS }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +77,10 @@ private fun FitnessKpiApp(
                 AppScreen.ENTRY -> {
                     EntryScreen(viewModel(factory = EntryViewModelFactory(repository)))
                 }
+
+                AppScreen.SETTINGS -> {
+                    SettingsScreen(viewModel(factory = SettingsViewModelFactory(repository)))
+                }
             }
         }
         NavigationBar {
@@ -88,6 +95,12 @@ private fun FitnessKpiApp(
                 onClick = { selectedScreen = AppScreen.ENTRY },
                 icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
                 label = { Text(stringResource(R.string.nav_entry)) },
+            )
+            NavigationBarItem(
+                selected = selectedScreen == AppScreen.SETTINGS,
+                onClick = { selectedScreen = AppScreen.SETTINGS },
+                icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                label = { Text(stringResource(R.string.nav_settings)) },
             )
         }
     }

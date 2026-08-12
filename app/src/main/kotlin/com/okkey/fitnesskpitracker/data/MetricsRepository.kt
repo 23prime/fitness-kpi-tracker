@@ -75,6 +75,8 @@ class MetricsRepository(
 
     suspend fun findEarliestDate(): LocalDate? = dao.findEarliestDate()
 
+    suspend fun exportCsv(): String = MetricsCsv.format(dao.findAll())
+
     suspend fun findWeightRange(
         startDate: LocalDate,
         endDate: LocalDate,

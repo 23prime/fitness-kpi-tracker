@@ -44,6 +44,12 @@
 
     <string name="nav_dashboard">ダッシュボード</string>
     <string name="nav_entry">入力・補正</string>
+    <string name="nav_settings">設定</string>
+
+    <string name="settings_title">設定</string>
+    <string name="settings_button_export">CSVをエクスポート</string>
+    <string name="settings_export_success">エクスポートしました</string>
+    <string name="settings_export_failed">エクスポートに失敗しました</string>
 
     <string name="permissions_rationale_title">Health Connect の権限について</string>
     <string name="permissions_rationale_body">歩数・体重を読み取り専用で使用します。取得したデータは端末内の Room データベースにのみ保存され、外部に送信されることはありません。</string>

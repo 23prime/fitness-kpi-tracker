@@ -341,6 +341,25 @@ class DailyMetricsDaoTest {
             assertEquals(oldest, result)
         }
 
+    @Test
+    fun findAll_noRows_returnsEmptyList() =
+        runTest {
+            val result = dao.findAll()
+
+            assertEquals(emptyList(), result)
+        }
+
+    @Test
+    fun findAll_returnsAllRowsOrderedByDate() =
+        runTest {
+            upsertStepsOnly(LocalDate.of(2026, 7, 20), steps = 4_000L)
+            upsertStepsOnly(LocalDate.of(2026, 7, 10), steps = 3_000L)
+
+            val result = dao.findAll()
+
+            assertEquals(listOf(LocalDate.of(2026, 7, 10), LocalDate.of(2026, 7, 20)), result.map { it.date })
+        }
+
     private suspend fun upsertStepsOnly(
         date: LocalDate,
         steps: Long,

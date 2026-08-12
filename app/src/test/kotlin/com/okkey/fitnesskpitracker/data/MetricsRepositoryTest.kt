@@ -413,4 +413,23 @@ class MetricsRepositoryTest {
             assertTrue(succeeded)
             assertNull(database.dailyMetricsDao().findByDate(today))
         }
+
+    @Test
+    fun exportCsv_noRows_returnsHeaderOnly() =
+        runTest {
+            val csv = repository.exportCsv()
+
+            assertEquals(MetricsCsv.HEADER, csv)
+        }
+
+    @Test
+    fun exportCsv_withRows_matchesMetricsCsvFormatOfAllRows() =
+        runTest {
+            val date = LocalDate.of(2026, 7, 28)
+            repository.saveManual(date, steps = 4_000L, cyclingDistanceKm = 5.0, weightKg = 59.5, workoutSets = 21)
+
+            val csv = repository.exportCsv()
+
+            assertEquals(MetricsCsv.format(database.dailyMetricsDao().findAll()), csv)
+        }
 }
