@@ -97,5 +97,5 @@ adb shell bmgr transport com.google.android.gms/.backup.BackupTransportService
 
 ### 既知の制約
 
-- **インポート直後の Health Connect 同期による上書き**: `MetricsRepository.syncHealthConnect` は権限があると直近 30 日（`SYNC_RANGE_DAYS = 30`）の Health Connect 列を書き込み、レコードがない日は歩数 0 / 体重 null で上書きする。そのため CSV インポート直後にアプリを起動すると、直近 30 日分の Health Connect 列は端末の Health Connect の実データで上書きされる。手入力列は対象外なので影響を受けない。31 日以前は同期対象外のため、CSV から復元した値がそのまま残る。
+- **インポート直後の Health Connect 同期による上書き**: `MetricsRepository.syncHealthConnect` は、権限があり、かつ該当項目の読み取りに成功した場合に限り、直近 30 日（`SYNC_RANGE_DAYS = 30`）の `steps_health_connect` / `weight_kg_health_connect` 列を書き込む（サイクリング距離の Health Connect 列は対象外）。読み取りが成功した日に Health Connect 側のレコードがなければ、歩数は 0、体重は null で上書きする。読み取り自体が失敗した場合は書き込みをスキップし、既存の値は上書きされない。そのため CSV インポート直後にアプリを起動すると、直近 30 日分の `steps_health_connect` / `weight_kg_health_connect` は（読み取りに成功する限り）端末の Health Connect の実データで上書きされる。手入力列は対象外なので影響を受けない。31 日以前は同期対象外のため、CSV から復元した値がそのまま残る。
 - **クラウドストレージの選択可否**: SAF のダイアログから Dropbox や Google ドライブなどのクラウドストレージを保存先・読み込み元として選べるかは、各アプリが SAF のドキュメントプロバイダーを提供しているかに依存する（未検証）。
