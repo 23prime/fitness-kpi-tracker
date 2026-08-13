@@ -69,4 +69,33 @@ adb shell bmgr transport com.google.android.gms/.backup.BackupTransportService
 
 - Auto Backup はプラットフォーム依存の動作である。「充電中 + Wi-Fi + アイドル時に 24 時間に 1 回」は保証されたスケジュールではなく典型的な発生条件にすぎない。バックアップの有効化はユーザー側で必要で、モバイル通信でのバックアップを許可していない限り Wi-Fi 接続が前提になる。
 - 復元はアプリの新規インストール時のみ行われる。既存インストールへの後からの復元はできない。
-- 任意タイミングでの手動エクスポート／インポートやクラウド同期はスコープ外。
+- クラウド同期はスコープ外。
+
+## CSV による手動バックアップ
+
+任意のタイミングでバックアップ・復元・機種変更・PC での分析を行いたい場合は、設定タブの CSV エクスポート・インポートを使う。Auto Backup と異なり、既存インストールへの復元にも使える。
+
+### フォーマット
+
+- `daily_metrics` テーブルの 8 列（`date`, `steps_health_connect`, `steps_manual`, `cycling_distance_km_health_connect`, `cycling_distance_km_manual`, `weight_kg_health_connect`, `weight_kg_manual`, `workout_sets`）をそのままの順で出力する。
+- 文字コードは UTF-8（BOM なし）、改行は LF。日付は ISO 8601（`yyyy-MM-dd`）。
+- インポート時は列順ではなくヘッダ名で列を解決するが、ヘッダは 8 列と完全一致している必要がある。
+
+### エクスポート
+
+設定タブの「CSVをエクスポート」から、Storage Access Framework のダイアログで保存先を選ぶ。全期間・全行を対象に、デフォルトのファイル名 `fitness-kpi-tracker-YYYYMMDD.csv` で書き出す。
+
+### インポート
+
+設定タブの「CSVをインポート」からファイルを選ぶと確認ダイアログが表示され、確定すると `daily_metrics` を CSV の内容で**全置換**する（1 トランザクションで実行、失敗時は DB を変更しない）。既存データはすべて失われるため、確認ダイアログの内容をよく確認すること。
+
+以下のいずれかを満たさない CSV はインポートが中止され、DB は変更されない。
+
+- ヘッダが上記 8 列と完全一致している
+- 各行の日付が ISO 8601 として解釈でき、かつ重複していない
+- 各数値列が 0 以上の解釈可能な数値である（歩数・セット数は整数、サイクリング距離・体重は小数）。入力・補正画面の手入力バリデーションと同様、負の値は拒否する。
+
+### 既知の制約
+
+- **インポート直後の Health Connect 同期による上書き**: `MetricsRepository.syncHealthConnect` は、権限があり、かつ該当項目の読み取りに成功した場合に限り、直近 30 日（`SYNC_RANGE_DAYS = 30`）の `steps_health_connect` / `weight_kg_health_connect` 列を書き込む（サイクリング距離の Health Connect 列は対象外）。読み取りが成功した日に Health Connect 側のレコードがなければ、歩数は 0、体重は null で上書きする。読み取り自体が失敗した場合は書き込みをスキップし、既存の値は上書きされない。そのため CSV インポート直後にアプリを起動すると、直近 30 日分の `steps_health_connect` / `weight_kg_health_connect` は（読み取りに成功する限り）端末の Health Connect の実データで上書きされる。手入力列は対象外なので影響を受けない。31 日以前は同期対象外のため、CSV から復元した値がそのまま残る。
+- **クラウドストレージの選択可否**: SAF のダイアログから Dropbox や Google ドライブなどのクラウドストレージを保存先・読み込み元として選べるかは、各アプリが SAF のドキュメントプロバイダーを提供しているかに依存する（未検証）。

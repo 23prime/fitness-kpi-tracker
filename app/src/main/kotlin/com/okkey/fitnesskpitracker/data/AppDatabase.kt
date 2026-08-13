@@ -8,4 +8,6 @@ import androidx.room.TypeConverters
 @TypeConverters(LocalDateConverter::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dailyMetricsDao(): DailyMetricsDao
+
+    abstract fun dailyMetricsCsvDao(): DailyMetricsCsvDao
 }
