@@ -151,4 +151,68 @@ class ActivityScoreTest {
     fun rollingWindowTotalScoreTarget_equalsDailyTargetTimesSevenDays() {
         assertEquals(1_050.0, ROLLING_WINDOW_TOTAL_SCORE_TARGET)
     }
+
+    @Test
+    fun evaluateActivityScore_rollingWindowMode_matchesEvaluateRollingWindow() {
+        val evaluation =
+            evaluateActivityScore(
+                mode = ActivityScoreEvaluationMode.ROLLING_WINDOW,
+                otherDaysScores = listOf(125.0, 125.0, 125.0, 125.0),
+                selectedDateScore = 80.0,
+            )
+
+        assertEquals(250.0, evaluation.requiredScore)
+        assertEquals(80.0 / 250.0, evaluation.achievement)
+    }
+
+    @Test
+    fun evaluateActivityScore_dailyOnlyMode_ignoresOtherDaysAndRequiresSingleDayTarget() {
+        val evaluation =
+            evaluateActivityScore(
+                mode = ActivityScoreEvaluationMode.DAILY_ONLY,
+                otherDaysScores = listOf(125.0, 125.0, 125.0, 125.0),
+                selectedDateScore = 80.0,
+            )
+
+        assertEquals(DAILY_SCORE_TARGET, evaluation.requiredScore)
+        assertEquals(80.0 / DAILY_SCORE_TARGET, evaluation.achievement)
+        assertEquals(80.0, evaluation.averageScore)
+        assertEquals(80.0, evaluation.totalScore)
+    }
+
+    @Test
+    fun hasActivityScoreEvaluationData_rollingWindowMode_delegatesToHasRollingWindowData() {
+        assertFalse(
+            hasActivityScoreEvaluationData(
+                mode = ActivityScoreEvaluationMode.ROLLING_WINDOW,
+                windowScores = listOf(null, null),
+                selectedDateScore = null,
+            ),
+        )
+        assertTrue(
+            hasActivityScoreEvaluationData(
+                mode = ActivityScoreEvaluationMode.ROLLING_WINDOW,
+                windowScores = listOf(null, 50.0),
+                selectedDateScore = null,
+            ),
+        )
+    }
+
+    @Test
+    fun hasActivityScoreEvaluationData_dailyOnlyMode_checksSelectedDateScoreOnly() {
+        assertFalse(
+            hasActivityScoreEvaluationData(
+                mode = ActivityScoreEvaluationMode.DAILY_ONLY,
+                windowScores = listOf(null, 50.0),
+                selectedDateScore = null,
+            ),
+        )
+        assertTrue(
+            hasActivityScoreEvaluationData(
+                mode = ActivityScoreEvaluationMode.DAILY_ONLY,
+                windowScores = listOf(null, null),
+                selectedDateScore = 80.0,
+            ),
+        )
+    }
 }

@@ -60,3 +60,27 @@ fun evaluateRollingWindow(
     val remainingScore = requiredScore - selectedDateScore
     return RollingWindowEvaluation(requiredScore, achievement, averageScore, remainingScore, totalScore)
 }
+
+enum class ActivityScoreEvaluationMode { ROLLING_WINDOW, DAILY_ONLY }
+
+// DAILY_ONLY reuses evaluateRollingWindow with no other days, which makes dataDaysCount 1 and
+// requiredScore equal to a single day's target — mathematically the same as a same-day-only evaluation.
+fun evaluateActivityScore(
+    mode: ActivityScoreEvaluationMode,
+    otherDaysScores: List<Double>,
+    selectedDateScore: Double,
+): RollingWindowEvaluation =
+    when (mode) {
+        ActivityScoreEvaluationMode.ROLLING_WINDOW -> evaluateRollingWindow(otherDaysScores, selectedDateScore)
+        ActivityScoreEvaluationMode.DAILY_ONLY -> evaluateRollingWindow(emptyList(), selectedDateScore)
+    }
+
+fun hasActivityScoreEvaluationData(
+    mode: ActivityScoreEvaluationMode,
+    windowScores: List<Double?>,
+    selectedDateScore: Double?,
+): Boolean =
+    when (mode) {
+        ActivityScoreEvaluationMode.ROLLING_WINDOW -> hasRollingWindowData(windowScores)
+        ActivityScoreEvaluationMode.DAILY_ONLY -> selectedDateScore != null
+    }
