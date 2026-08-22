@@ -23,7 +23,7 @@
     <string name="dashboard_activity_no_data">データなし</string>
     <string name="dashboard_activity_rolling_average">7日平均 %1$s pt</string>
     <string name="dashboard_activity_rolling_total">合計 %1$s / %2$s pt</string>
-    <string name="dashboard_activity_daily_score">本日のスコア %1$s pt</string>
+    <string name="dashboard_activity_daily_score">選択日のスコア %1$s pt</string>
     <string name="dashboard_activity_remaining_score">あと %1$s pt</string>
     <string name="dashboard_activity_maintained">維持中</string>
     <string name="dashboard_activity_evaluation_mode_rolling_window">7日間</string>
