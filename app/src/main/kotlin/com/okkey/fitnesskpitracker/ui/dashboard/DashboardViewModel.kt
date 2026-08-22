@@ -8,14 +8,15 @@ import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.HealthConnectGateway
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
+import com.okkey.fitnesskpitracker.domain.ActivityScoreEvaluationMode
 import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScore
 import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
-import com.okkey.fitnesskpitracker.domain.evaluateRollingWindow
-import com.okkey.fitnesskpitracker.domain.hasRollingWindowData
+import com.okkey.fitnesskpitracker.domain.evaluateActivityScore
+import com.okkey.fitnesskpitracker.domain.hasActivityScoreEvaluationData
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.CancellationException
@@ -37,6 +38,7 @@ data class DashboardUiState(
     val workoutSets: Int? = null,
     val activityScore: Double = 0.0,
     val activityScoreHistory: List<DailyActivityScorePoint> = emptyList(),
+    val activityScoreEvaluationMode: ActivityScoreEvaluationMode = ActivityScoreEvaluationMode.ROLLING_WINDOW,
     val activityRollingWindow: RollingWindowEvaluation? = null,
     val isSelectedDateToday: Boolean = false,
     val canGoToPreviousDay: Boolean = false,
@@ -56,6 +58,7 @@ class DashboardViewModel(
     private val today: () -> LocalDate,
 ) : ViewModel() {
     private var selectedDate: LocalDate = today()
+    private var evaluationMode: ActivityScoreEvaluationMode = ActivityScoreEvaluationMode.ROLLING_WINDOW
     private val _uiState = MutableStateFlow(DashboardUiState(date = selectedDate))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
@@ -73,11 +76,11 @@ class DashboardViewModel(
     private var isManualRefreshing = false
 
     init {
-        refresh()
+        viewModelScope.launch { refreshSuspend() }
     }
 
     fun onReload() {
-        refresh()
+        viewModelScope.launch { refreshSuspend() }
     }
 
     // Silent sync for ON_RESUME: no loading indicator, no failure snackbar.
@@ -112,24 +115,26 @@ class DashboardViewModel(
         if (HEALTH_CONNECT_PERMISSIONS.none { it in grantedPermissions }) {
             viewModelScope.launch { _permissionDeniedEvent.emit(Unit) }
         }
-        refresh()
+        viewModelScope.launch { refreshSuspend() }
     }
 
     fun onPreviousDay() {
         val state = _uiState.value
         if (state.date != selectedDate || !state.canGoToPreviousDay) return
         selectedDate = selectedDate.minusDays(1)
-        refresh()
+        viewModelScope.launch { refreshSuspend() }
     }
 
     fun onNextDay() {
         val state = _uiState.value
         if (state.date != selectedDate || !state.canGoToNextDay) return
         selectedDate = selectedDate.plusDays(1)
-        refresh()
+        viewModelScope.launch { refreshSuspend() }
     }
 
-    private fun refresh() {
+    fun onActivityScoreEvaluationModeChange(mode: ActivityScoreEvaluationMode) {
+        if (evaluationMode == mode) return
+        evaluationMode = mode
         viewModelScope.launch { refreshSuspend() }
     }
 
@@ -142,10 +147,12 @@ class DashboardViewModel(
             activityScore(activityValues.steps, activityValues.cyclingDistanceKm, activityValues.workoutSets)
         val activityScoreHistory =
             repository.findActivityScoreRange(activityScoreHistoryWindowStart(date), date)
+        val mode = evaluationMode
+        val selectedDateScore = activityScoreHistory.find { it.date == date }?.score
         val rollingWindow =
-            if (hasRollingWindowData(activityScoreHistory.map { it.score })) {
+            if (hasActivityScoreEvaluationData(mode, activityScoreHistory.map { it.score }, selectedDateScore)) {
                 val otherDaysScores = activityScoreHistory.mapNotNull { if (it.date == date) null else it.score }
-                evaluateRollingWindow(otherDaysScores, score)
+                evaluateActivityScore(mode, otherDaysScores, score)
             } else {
                 null
             }
@@ -164,6 +171,7 @@ class DashboardViewModel(
                 workoutSets = activityValues.workoutSets,
                 activityScore = score,
                 activityScoreHistory = activityScoreHistory,
+                activityScoreEvaluationMode = mode,
                 activityRollingWindow = rollingWindow,
                 isSelectedDateToday = date == todayDate,
                 canGoToPreviousDay = date > earliestDate,
