@@ -9,6 +9,7 @@ import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
 import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.MetricsRepository
 import com.okkey.fitnesskpitracker.data.WeightPoint
+import com.okkey.fitnesskpitracker.domain.ActivityScoreEvaluationMode
 import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
 import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
@@ -255,6 +256,83 @@ class DashboardViewModelTest {
             val rollingWindow = viewModel.uiState.value.activityRollingWindow
             assertTrue(rollingWindow != null && rollingWindow.requiredScore <= 0.0)
             assertEquals(1.0, rollingWindow.achievement)
+        }
+
+    @Test
+    fun initialState_activityScoreEvaluationModeDefaultsToRollingWindow() =
+        runTest {
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val mode = viewModel.uiState.value.activityScoreEvaluationMode
+            assertEquals(ActivityScoreEvaluationMode.ROLLING_WINDOW, mode)
+        }
+
+    @Test
+    fun onActivityScoreEvaluationModeChange_dailyOnly_evaluatesSelectedDateAloneWithoutAffectingHistory() =
+        runTest {
+            repository.saveManual(today, steps = 4_000L, cyclingDistanceKm = null, weightKg = null, workoutSets = null)
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = 20,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onActivityScoreEvaluationModeChange(ActivityScoreEvaluationMode.DAILY_ONLY)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            val rollingWindow = state.activityRollingWindow
+            assertEquals(ActivityScoreEvaluationMode.DAILY_ONLY, state.activityScoreEvaluationMode)
+            assertEquals(80.0 / 150.0, rollingWindow?.achievement)
+            assertEquals(7, state.activityScoreHistory.size)
+        }
+
+    @Test
+    fun onActivityScoreEvaluationModeChange_dailyOnly_noRecordOnSelectedDate_isNoDataEvenWithOtherDaysRecorded() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = 20,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onActivityScoreEvaluationModeChange(ActivityScoreEvaluationMode.DAILY_ONLY)
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.activityRollingWindow)
+        }
+
+    @Test
+    fun onActivityScoreEvaluationModeChange_persistsAcrossDayNavigation() =
+        runTest {
+            repository.saveManual(
+                today.minusDays(1),
+                steps = null,
+                cyclingDistanceKm = null,
+                weightKg = null,
+                workoutSets = null,
+            )
+            dispatcher.scheduler.advanceUntilIdle()
+            val viewModel = DashboardViewModel(repository, gateway) { today }
+            dispatcher.scheduler.advanceUntilIdle()
+
+            viewModel.onActivityScoreEvaluationModeChange(ActivityScoreEvaluationMode.DAILY_ONLY)
+            dispatcher.scheduler.advanceUntilIdle()
+            viewModel.onPreviousDay()
+            dispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(ActivityScoreEvaluationMode.DAILY_ONLY, viewModel.uiState.value.activityScoreEvaluationMode)
         }
 
     @Test

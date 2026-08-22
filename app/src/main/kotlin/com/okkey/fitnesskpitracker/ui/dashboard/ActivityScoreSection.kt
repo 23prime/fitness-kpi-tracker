@@ -22,9 +22,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -42,6 +46,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.okkey.fitnesskpitracker.R
 import com.okkey.fitnesskpitracker.data.DailyActivityScorePoint
+import com.okkey.fitnesskpitracker.domain.ActivityScoreEvaluationMode
 import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.activityScoreArcSweepDegrees
 import com.okkey.fitnesskpitracker.domain.isActivityScoreAchieved
@@ -61,6 +66,7 @@ internal fun ActivityScoreSection(
     uiState: DashboardUiState,
     onPreviousDay: () -> Unit,
     onNextDay: () -> Unit,
+    onEvaluationModeChange: (ActivityScoreEvaluationMode) -> Unit,
 ) {
     val swipeThresholdPx = with(LocalDensity.current) { SWIPE_THRESHOLD.toPx() }
     Column(
@@ -96,9 +102,39 @@ internal fun ActivityScoreSection(
             onPreviousDay = onPreviousDay,
             onNextDay = onNextDay,
         )
+        EvaluationModeToggle(
+            mode = uiState.activityScoreEvaluationMode,
+            onModeChange = onEvaluationModeChange,
+        )
         ActivityScoreContent(uiState = uiState)
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EvaluationModeToggle(
+    mode: ActivityScoreEvaluationMode,
+    onModeChange: (ActivityScoreEvaluationMode) -> Unit,
+) {
+    val entries = ActivityScoreEvaluationMode.entries
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        entries.forEachIndexed { index, entry ->
+            SegmentedButton(
+                selected = mode == entry,
+                onClick = { onModeChange(entry) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = entries.size),
+            ) {
+                Text(stringResource(evaluationModeLabel(entry)))
+            }
+        }
+    }
+}
+
+private fun evaluationModeLabel(mode: ActivityScoreEvaluationMode): Int =
+    when (mode) {
+        ActivityScoreEvaluationMode.ROLLING_WINDOW -> R.string.dashboard_activity_evaluation_mode_rolling_window
+        ActivityScoreEvaluationMode.DAILY_ONLY -> R.string.dashboard_activity_evaluation_mode_daily_only
+    }
 
 @Composable
 private fun ActivityScoreContent(uiState: DashboardUiState) {
@@ -134,6 +170,7 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
                     date = snapshot.date,
                     score = snapshot.activityScore,
                     rollingWindow = snapshot.activityRollingWindow,
+                    mode = snapshot.activityScoreEvaluationMode,
                 )
                 ActivityScoreBreakdown(
                     steps = snapshot.steps,
@@ -145,6 +182,7 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
             RollingWindowSummary(
                 rollingWindow = snapshot.activityRollingWindow,
                 isSelectedDateToday = snapshot.isSelectedDateToday,
+                mode = snapshot.activityScoreEvaluationMode,
             )
         }
     }
@@ -159,6 +197,7 @@ private fun ActivityScoreContent(uiState: DashboardUiState) {
 private data class ActivityScoreSnapshot(
     val date: LocalDate,
     val activityScore: Double,
+    val activityScoreEvaluationMode: ActivityScoreEvaluationMode,
     val activityRollingWindow: RollingWindowEvaluation?,
     val isSelectedDateToday: Boolean,
     val activityScoreHistory: List<DailyActivityScorePoint>,
@@ -169,6 +208,7 @@ private data class ActivityScoreSnapshot(
     constructor(uiState: DashboardUiState) : this(
         date = uiState.date,
         activityScore = uiState.activityScore,
+        activityScoreEvaluationMode = uiState.activityScoreEvaluationMode,
         activityRollingWindow = uiState.activityRollingWindow,
         isSelectedDateToday = uiState.isSelectedDateToday,
         activityScoreHistory = uiState.activityScoreHistory,
@@ -212,9 +252,10 @@ private fun ActivityScoreDonutChart(
     date: LocalDate,
     score: Double,
     rollingWindow: RollingWindowEvaluation?,
+    mode: ActivityScoreEvaluationMode,
 ) {
     if (rollingWindow == null) {
-        ActivityScoreDonutNoData(date = date)
+        ActivityScoreDonutNoData(date = date, mode = mode)
         return
     }
     val achieved = isActivityScoreAchieved(rollingWindow.achievement)
@@ -228,12 +269,12 @@ private fun ActivityScoreDonutChart(
         } else {
             "${formatNumber(score)} / ${formatNumber(rollingWindow.requiredScore)} pt"
         }
-    val chartDescription =
-        stringResource(
-            R.string.dashboard_activity_chart_description,
-            date.format(DATE_DISPLAY_FORMATTER),
-            percentText,
-        )
+    val chartDescriptionRes =
+        when (mode) {
+            ActivityScoreEvaluationMode.ROLLING_WINDOW -> R.string.dashboard_activity_chart_description
+            ActivityScoreEvaluationMode.DAILY_ONLY -> R.string.dashboard_activity_chart_description_daily_only
+        }
+    val chartDescription = stringResource(chartDescriptionRes, date.format(DATE_DISPLAY_FORMATTER), percentText)
 
     Box(
         modifier =
@@ -248,11 +289,18 @@ private fun ActivityScoreDonutChart(
 }
 
 @Composable
-private fun ActivityScoreDonutNoData(date: LocalDate) {
+private fun ActivityScoreDonutNoData(
+    date: LocalDate,
+    mode: ActivityScoreEvaluationMode,
+) {
     val trackColor = MaterialTheme.colorScheme.surfaceVariant
     val noDataText = stringResource(R.string.dashboard_activity_no_data)
-    val chartDescription =
-        stringResource(R.string.dashboard_activity_chart_no_data_description, date.format(DATE_DISPLAY_FORMATTER))
+    val chartNoDataDescriptionRes =
+        when (mode) {
+            ActivityScoreEvaluationMode.ROLLING_WINDOW -> R.string.dashboard_activity_chart_no_data_description
+            ActivityScoreEvaluationMode.DAILY_ONLY -> R.string.dashboard_activity_chart_no_data_description_daily_only
+        }
+    val chartDescription = stringResource(chartNoDataDescriptionRes, date.format(DATE_DISPLAY_FORMATTER))
 
     Box(
         modifier =

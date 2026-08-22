@@ -106,6 +106,7 @@ fun DashboardScreen(
                 uiState = uiState,
                 onPreviousDay = viewModel::onPreviousDay,
                 onNextDay = viewModel::onNextDay,
+                onEvaluationModeChange = viewModel::onActivityScoreEvaluationModeChange,
             )
             WeightGoalSection(uiState)
         }
