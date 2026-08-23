@@ -15,6 +15,8 @@ import com.okkey.fitnesskpitracker.domain.ActivityScoreEvaluationMode
 import com.okkey.fitnesskpitracker.domain.ROLLING_WINDOW_TOTAL_SCORE_TARGET
 import com.okkey.fitnesskpitracker.domain.RollingWindowEvaluation
 import com.okkey.fitnesskpitracker.domain.isActivityScoreAchieved
+import com.okkey.fitnesskpitracker.domain.remainingSteps
+import java.util.Locale
 
 private val ROLLING_WINDOW_SUMMARY_SPACING = 8.dp
 
@@ -55,7 +57,11 @@ internal fun RollingWindowSummary(
         } else if (isActivityScoreAchieved(rollingWindow.achievement)) {
             stringResource(R.string.dashboard_activity_maintained)
         } else {
-            stringResource(R.string.dashboard_activity_remaining_score, formatNumber(rollingWindow.remainingScore))
+            stringResource(
+                R.string.dashboard_activity_remaining_score,
+                formatNumber(rollingWindow.remainingScore),
+                formatSteps(remainingSteps(rollingWindow.remainingScore)),
+            )
         }
     val texts = scoreTexts + listOfNotNull(remainingText)
     val description = texts.joinToString(separator = " ")
@@ -66,3 +72,5 @@ internal fun RollingWindowSummary(
         texts.forEach { Text(it, style = MaterialTheme.typography.bodyMedium) }
     }
 }
+
+private fun formatSteps(steps: Long): String = String.format(Locale.ROOT, "%,d", steps)

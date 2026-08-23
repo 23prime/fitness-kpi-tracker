@@ -199,6 +199,22 @@ class ActivityScoreTest {
     }
 
     @Test
+    fun remainingSteps_evenlyDivisible_returnsExactSteps() {
+        assertEquals(2_000L, remainingSteps(40.0))
+    }
+
+    @Test
+    fun remainingSteps_notEvenlyDivisible_roundsUp() {
+        assertEquals(2_000L, remainingSteps(39.99))
+    }
+
+    @Test
+    fun remainingSteps_zeroOrBelow_isZero() {
+        assertEquals(0L, remainingSteps(0.0))
+        assertEquals(0L, remainingSteps(-75.0))
+    }
+
+    @Test
     fun hasActivityScoreEvaluationData_dailyOnlyMode_checksSelectedDateScoreOnly() {
         assertFalse(
             hasActivityScoreEvaluationData(
