@@ -171,4 +171,21 @@ class WeightGoalTest {
 
         assertEquals(WEIGHT_BASELINE_KG, weight)
     }
+
+    @Test
+    fun weightChartEndDate_beforeDeadline_isDeadline() {
+        assertEquals(WEIGHT_DEADLINE, weightChartEndDate(WEIGHT_DEADLINE.minusDays(1)))
+    }
+
+    @Test
+    fun weightChartEndDate_onDeadline_isDeadline() {
+        assertEquals(WEIGHT_DEADLINE, weightChartEndDate(WEIGHT_DEADLINE))
+    }
+
+    @Test
+    fun weightChartEndDate_afterDeadline_isToday() {
+        val today = WEIGHT_DEADLINE.plusDays(1)
+
+        assertEquals(today, weightChartEndDate(today))
+    }
 }

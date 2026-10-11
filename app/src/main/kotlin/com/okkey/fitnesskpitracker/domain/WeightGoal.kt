@@ -21,6 +21,8 @@ fun weightGoalProgress(currentWeightKg: Double): Double =
 
 fun daysUntilWeightDeadline(today: LocalDate): Long = ChronoUnit.DAYS.between(today, WEIGHT_DEADLINE)
 
+fun weightChartEndDate(today: LocalDate): LocalDate = maxOf(WEIGHT_DEADLINE, today)
+
 fun isWeightGoalOverdue(
     today: LocalDate,
     progress: Double,

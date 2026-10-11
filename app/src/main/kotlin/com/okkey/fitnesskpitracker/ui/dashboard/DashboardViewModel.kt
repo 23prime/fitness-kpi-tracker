@@ -18,6 +18,7 @@ import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
 import com.okkey.fitnesskpitracker.domain.evaluateActivityScore
 import com.okkey.fitnesskpitracker.domain.hasActivityScoreEvaluationData
 import com.okkey.fitnesskpitracker.domain.isWeightGoalOverdue
+import com.okkey.fitnesskpitracker.domain.weightChartEndDate
 import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -48,6 +49,7 @@ data class DashboardUiState(
     val daysUntilDeadline: Long = 0,
     val isWeightOverdue: Boolean = false,
     val weightHistory: List<WeightPoint> = emptyList(),
+    val weightChartEndDate: LocalDate = WEIGHT_DEADLINE,
     val healthConnectBannerState: HealthConnectBannerState = HealthConnectBannerState.NONE,
     val isSyncing: Boolean = false,
 )
@@ -159,7 +161,8 @@ class DashboardViewModel(
         val earliestDate = repository.findEarliestDate() ?: date
         val currentWeightKg = repository.findLatestWeightKgOnOrBefore(todayDate)
         val weightProgress = currentWeightKg?.let { weightGoalProgress(it) }
-        val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, WEIGHT_DEADLINE)
+        val chartEndDate = weightChartEndDate(todayDate)
+        val weightHistory = repository.findWeightRange(WEIGHT_START_DATE, chartEndDate)
         val bannerState = healthConnectBannerState()
         if (requestGeneration != generation) return
 
@@ -181,6 +184,7 @@ class DashboardViewModel(
                 daysUntilDeadline = daysUntilWeightDeadline(todayDate),
                 isWeightOverdue = weightProgress?.let { isWeightGoalOverdue(todayDate, it) } ?: false,
                 weightHistory = weightHistory,
+                weightChartEndDate = chartEndDate,
                 healthConnectBannerState = bannerState,
                 isSyncing = isManualRefreshing,
             )
