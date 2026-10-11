@@ -70,6 +70,7 @@ internal fun WeightGoalSection(uiState: DashboardUiState) {
         LabeledValueRow(stringResource(R.string.dashboard_label_days_remaining), uiState.daysUntilDeadline.toString())
         WeightLineChart(
             weightHistory = uiState.weightHistory,
+            endDate = uiState.weightChartEndDate,
             modifier = Modifier.padding(vertical = WEIGHT_CHART_VERTICAL_MARGIN),
         )
     }
@@ -78,6 +79,7 @@ internal fun WeightGoalSection(uiState: DashboardUiState) {
 @Composable
 private fun WeightLineChart(
     weightHistory: List<WeightPoint>,
+    endDate: LocalDate,
     modifier: Modifier = Modifier,
 ) {
     val labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -91,6 +93,7 @@ private fun WeightLineChart(
             Column(modifier = Modifier.weight(1f)) {
                 WeightChartCanvas(
                     weightHistory = weightHistory,
+                    endDate = endDate,
                     minWeight = minWeight,
                     maxWeight = maxWeight,
                     gridColor = labelColor,
@@ -102,7 +105,7 @@ private fun WeightLineChart(
                         color = labelColor,
                     )
                     Text(
-                        WEIGHT_DEADLINE.format(DATE_DISPLAY_FORMATTER),
+                        endDate.format(DATE_DISPLAY_FORMATTER),
                         style = MaterialTheme.typography.labelSmall,
                         color = labelColor,
                     )
@@ -132,13 +135,14 @@ private fun WeightChartYAxisLabels(
 @Composable
 private fun WeightChartCanvas(
     weightHistory: List<WeightPoint>,
+    endDate: LocalDate,
     minWeight: Double,
     maxWeight: Double,
     gridColor: Color,
 ) {
     val idealColor = Color(COLOR_IDEAL_LINE)
     val actualColor = MaterialTheme.colorScheme.primary
-    val totalDays = ChronoUnit.DAYS.between(WEIGHT_START_DATE, WEIGHT_DEADLINE).coerceAtLeast(1)
+    val totalDays = ChronoUnit.DAYS.between(WEIGHT_START_DATE, endDate).coerceAtLeast(1)
 
     Canvas(
         modifier =

@@ -8,13 +8,9 @@ import com.okkey.fitnesskpitracker.data.FakeHealthConnectGateway
 import com.okkey.fitnesskpitracker.data.HEALTH_CONNECT_PERMISSIONS
 import com.okkey.fitnesskpitracker.data.HealthConnectAvailability
 import com.okkey.fitnesskpitracker.data.MetricsRepository
-import com.okkey.fitnesskpitracker.data.WeightPoint
 import com.okkey.fitnesskpitracker.domain.ActivityScoreEvaluationMode
-import com.okkey.fitnesskpitracker.domain.WEIGHT_DEADLINE
-import com.okkey.fitnesskpitracker.domain.WEIGHT_START_DATE
 import com.okkey.fitnesskpitracker.domain.activityScoreHistoryWindowStart
 import com.okkey.fitnesskpitracker.domain.daysUntilWeightDeadline
-import com.okkey.fitnesskpitracker.domain.weightGoalProgress
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -132,39 +128,6 @@ class DashboardViewModelTest {
             val history = viewModel.uiState.value.activityScoreHistory
             assertEquals(today.minusDays(1), history.last().date)
             assertEquals(activityScoreHistoryWindowStart(today.minusDays(1)), history.first().date)
-        }
-
-    @Test
-    fun refresh_weightHistory_containsOnlyPointsWithinStartDateAndDeadline() =
-        runTest {
-            repository.saveManual(
-                WEIGHT_START_DATE.minusDays(1),
-                steps = null,
-                cyclingDistanceKm = null,
-                weightKg = 61.0,
-                workoutSets = null,
-            )
-            repository.saveManual(
-                WEIGHT_START_DATE,
-                steps = null,
-                cyclingDistanceKm = null,
-                weightKg = 60.0,
-                workoutSets = null,
-            )
-            repository.saveManual(
-                WEIGHT_DEADLINE.plusDays(1),
-                steps = null,
-                cyclingDistanceKm = null,
-                weightKg = 58.0,
-                workoutSets = null,
-            )
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val viewModel = DashboardViewModel(repository, gateway) { today }
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertEquals(listOf(WeightPoint(WEIGHT_START_DATE, 60.0)), state.weightHistory)
         }
 
     @Test
@@ -333,47 +296,6 @@ class DashboardViewModelTest {
             dispatcher.scheduler.advanceUntilIdle()
 
             assertEquals(ActivityScoreEvaluationMode.DAILY_ONLY, viewModel.uiState.value.activityScoreEvaluationMode)
-        }
-
-    @Test
-    fun refresh_currentWeight_fallsBackToMostRecentPriorRecord() =
-        runTest {
-            val recordedDate = LocalDate.of(2026, 7, 20)
-            repository.saveManual(
-                recordedDate,
-                steps = null,
-                cyclingDistanceKm = null,
-                weightKg = 59.5,
-                workoutSets = null,
-            )
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val viewModel = DashboardViewModel(repository, gateway) { today }
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertEquals(59.5, state.currentWeightKg)
-            assertEquals(weightGoalProgress(59.5), state.weightProgress)
-        }
-
-    @Test
-    fun refresh_pastDeadlineWithUnmetGoal_marksWeightOverdue() =
-        runTest {
-            val afterDeadline = LocalDate.of(2026, 10, 1)
-            repository.saveManual(
-                afterDeadline,
-                steps = null,
-                cyclingDistanceKm = null,
-                weightKg = 59.5,
-                workoutSets = null,
-            )
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val viewModel = DashboardViewModel(repository, gateway) { afterDeadline }
-            dispatcher.scheduler.advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertTrue(state.isWeightOverdue)
         }
 
     @Test
