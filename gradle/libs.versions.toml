@@ -1,7 +1,7 @@
 [versions]
 agp = "9.3.1"
 kotlin = "2.4.10"
-ksp = "2.3.10"
+ksp = "2.3.13"
 detekt = "1.23.8"
 ktlint-gradle = "14.2.0"
 ktlint-cli = "1.8.0"
