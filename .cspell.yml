@@ -30,6 +30,7 @@ overrides:
 ignorePaths:
   - '.git'
   - '.vscode'
+  - '.mise'
   - 'node_modules'
   - 'gradlew'
   - 'gradlew.bat'
