@@ -34,7 +34,7 @@ java = "temurin-21"
 android-sdk = "22.0"
 
 # Markdown
-markdownlint-cli2 = "0.24.1"
+markdownlint-cli2 = "0.24.2"
 
 # GitHub Actions
 jactionlint = "2"
